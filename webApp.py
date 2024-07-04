@@ -4,6 +4,7 @@ import import_ipynb
 import AnalyzerGTFS as Ana # type: ignore
 from streamlit_folium import st_folium
 import streamlit as st
+import pandas as pd
 
 
 
@@ -11,14 +12,24 @@ def get_pos(lat, lng):
     return lat, lng
 
 def print_map(lat, lon):
-    Analyzer = Ana.AnalyzerGTFS(lat,lon,'20240601','20240731')
-    Destinations = Analyzer.all()
+    AnalyzerTER = Ana.AnalyzerGTFS(lat,lon,'20240601','20240731','TER')
+    DestinationsTER = AnalyzerTER.get_destinations()
+    AnalyzerTGV = Ana.AnalyzerGTFS(lat,lon,'20240601','20240731','TGV')
+    DestinationsTGV = AnalyzerTGV.get_destinations()
+    AnalyzerINTERCITE= Ana.AnalyzerGTFS(lat,lon,'20240601','20240731','INTERCITE')
+    DestinationsINTERCITE = AnalyzerINTERCITE.get_destinations()
     st.session_state["markers"] = []
     st.session_state["markers"].append(fl.Marker([lat, lon], popup="You are here", color = "red"))
 
 
-    for row in Destinations.itertuples():
-        st.session_state["markers"].append(fl.Marker([float(row.stop_lat), float(row.stop_lon)], popup=row.stop_name, color = "blue"))
+    for row in DestinationsTER.itertuples():
+        st.session_state["markers"].append(fl.Marker([float(row.stop_lat), float(row.stop_lon)], popup=row.stop_name, color = "green"))
+        print(row.stop_name)
+    for row in DestinationsTGV.itertuples():
+        st.session_state["markers"].append(fl.Marker([float(row.stop_lat), float(row.stop_lon)], popup=row.stop_name, color = "yellow"))
+        print(row.stop_name)
+    for row in DestinationsINTERCITE.itertuples():
+        st.session_state["markers"].append(fl.Marker([float(row.stop_lat), float(row.stop_lon)], popup=row.stop_name, color = "black"))
         print(row.stop_name)
 
 
