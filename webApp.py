@@ -24,13 +24,10 @@ def print_map(lat, lon):
 
     for row in DestinationsTER.itertuples():
         st.session_state["markers"].append(fl.Marker([float(row.stop_lat), float(row.stop_lon)], popup=row.stop_name, color = "green"))
-        print(row.stop_name)
     for row in DestinationsTGV.itertuples():
         st.session_state["markers"].append(fl.Marker([float(row.stop_lat), float(row.stop_lon)], popup=row.stop_name, color = "yellow"))
-        print(row.stop_name)
     for row in DestinationsINTERCITE.itertuples():
         st.session_state["markers"].append(fl.Marker([float(row.stop_lat), float(row.stop_lon)], popup=row.stop_name, color = "black"))
-        print(row.stop_name)
 
 
 
