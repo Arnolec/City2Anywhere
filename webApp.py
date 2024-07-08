@@ -54,7 +54,6 @@ if 'zoom' not in st.session_state:
     st.session_state.zoom = 5
 if 'markers' not in st.session_state:
     st.session_state.markers = []
-
 if 'cities' not in st.session_state:
     st.session_state.cities = get_cities()
 
@@ -72,7 +71,10 @@ data = None
 
 today = datetime.datetime.now()
 next_year = today.year + 1
-date = st.date_input('Période envisagée pour le séjour :', (today, today), min_value=today, max_value=datetime.datetime(next_year, today.month, today.day))
+date = st.date_input('Période envisagée pour le séjour :',
+                        (today, today),
+                        min_value=today,
+                        max_value=datetime.datetime(next_year, today.month, today.day))
 
 if (city_selected is not None) and (city_selected != st.session_state.previous_city):
     st.session_state.center = [st.session_state.cities[city_selected][0], st.session_state.cities[city_selected][1]]
@@ -80,7 +82,6 @@ if (city_selected is not None) and (city_selected != st.session_state.previous_c
     st.session_state.previous_city = city_selected
     if len(date) == 2:
         print_map(st.session_state.cities[city_selected][0], st.session_state.cities[city_selected][1], date)
-
 
 fg = fl.FeatureGroup("Markers")
 for marker in st.session_state["markers"]:
