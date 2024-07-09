@@ -17,20 +17,22 @@ class AnalyzerGTFS:
     routes = []
     stop_times = []
     trips = []
+    lat = 0
+    lon = 0
+    date_min = None
+    date_max = None
 
-    def __init__(self, lat = 46.7, lon = 1.9, date_min= datetime.today,date_max = datetime.today, path ='TER'):
+    def __init__(self, path ='TER'):
         self.calendar_dates = pd.read_csv('Data/'+ path +'/calendar_dates.txt')
         self.stop_times = pd.read_csv('Data/'+ path +'/stop_times.txt')[['trip_id', 'stop_id', 'departure_time']]
         self.stops = pd.read_csv('Data/'+ path +'/stops.txt')[['stop_id', 'stop_name', 'stop_lat', 'stop_lon', 'parent_station']]
         self.trips = pd.read_csv('Data/'+ path +'/trips.txt')[['service_id', 'trip_id', 'route_id']]
-        self.id_ville = self.villes_proches(lat,lon)
         self.calendar_dates.date = pd.to_datetime(self.calendar_dates["date"], format='%Y%m%d').dt.date
-        self.date_min = datetime.strptime(date_min, '%Y%m%d').date()
-        self.date_max = datetime.strptime(date_max, '%Y%m%d').date()
         self.stops['parent_station'] = self.stops['parent_station'].fillna('')
     
     # Etape 1 : Récupérer les stops de la ville / StopArea
     def get_stops(self):
+        self.id_ville = self.villes_proches(self.lat, self.lon)
         ville_Set = set(self.id_ville['stop_id'].array)
         return self.stops[[set([l]).issubset(ville_Set) for l in self.stops.parent_station.values.tolist()]]['stop_id']
     
@@ -101,3 +103,9 @@ class AnalyzerGTFS:
     def list_of_cities(path):
         stops = pd.read_csv('Data/'+ path +'/stops.txt')[['stop_id', 'stop_name', 'stop_lat', 'stop_lon', 'parent_station']]
         return stops[stops['stop_id'].str.contains('StopArea')][['stop_name','stop_lat','stop_lon','stop_id']]
+    
+    def load_search(self, lat, lon ,date_min= datetime.today,date_max = datetime.today):
+        self.lat = lat
+        self.lon = lon
+        self.date_min = datetime.strptime(date_min, '%Y%m%d').date()
+        self.date_max = datetime.strptime(date_max, '%Y%m%d').date()
