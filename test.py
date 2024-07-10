@@ -1,19 +1,34 @@
-import streamlit as st
 import folium
-from streamlit_folium import folium_static,st_folium
-def get_pos(lat, lng):
-    return lat, lng
-# Create a Folium map
-m = folium.Map(location=[46.903354, 1.888334], zoom_start=6)
+from streamlit_folium import st_folium
+from jinja2 import Template
+from folium.map import Marker
 
-# When the user interacts with the map
-map = st_folium(
-    m,
-    width=620, height=580,
-    key="folium_map"
-)
-data = None
-if map.get("last_clicked"):
-    data = get_pos(map["last_clicked"]["lat"], map["last_clicked"]["lng"])
-if data is not None:
-    st.write(data)
+# Modify Marker template to include the onClick event
+click_template = """{% macro script(this, kwargs) %}
+    var {{ this.get_name() }} = L.marker(
+        {{ this.location|tojson }},
+        {{ this.options|tojson }}
+    ).addTo({{ this._parent.get_name() }}).on('click', onClick);
+{% endmacro %}"""
+
+# Change template to custom template
+Marker._template = Template(click_template)
+
+location_center = [51.7678, -0.00675564]
+m = folium.Map(location_center, zoom_start=13)
+
+# Create the onClick listener function as a branca element and add to the map html
+click_js = """function onClick(e) {
+                 var point = e.latlng; alert(point)
+                 }"""
+                 
+e = folium.Element(click_js)
+html = m.get_root()
+html.script.get_root().render()
+html.script._children[e.get_name()] = e
+
+#Add marker (click on map an alert will display with latlng values)
+marker = folium.Marker([51.7678, -0.00675564]).add_to(m)
+
+m
+
