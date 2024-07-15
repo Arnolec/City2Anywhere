@@ -3,6 +3,15 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 from datetime import timedelta
+import re
+
+def date_to_timestamp(date):
+    pattern = re.compile(r'(\d{2}):(\d{2}):(\d{2})')
+    if pattern.match(date) is None:
+        return None
+    else:
+        match = pattern.search(date)
+        return int(match[1])*3600 + int(match[2])*60 + int(match[3])
 
 # Exemple de ville : StopArea:OCE87586545
 
@@ -28,6 +37,8 @@ class AnalyzerGTFS:
         self.stops = pd.read_csv('Data/'+ path +'/stops.txt')[['stop_id', 'stop_name', 'stop_lat', 'stop_lon', 'parent_station']]
         self.trips = pd.read_csv('Data/'+ path +'/trips.txt')[['service_id', 'trip_id', 'route_id']]
         self.calendar_dates.date = pd.to_datetime(self.calendar_dates["date"], format='%Y%m%d').dt.date
+        self.calendar_dates = self.calendar_dates.drop_duplicates(subset='service_id')
+        self.stop_times.departure_time = self.stop_times.apply(lambda x : date_to_timestamp(x['departure_time']), axis=1)
         self.stops['parent_station'] = self.stops['parent_station'].fillna('')
     
     # Etape 1 : Récupérer les stops de la ville / StopArea
@@ -68,9 +79,11 @@ class AnalyzerGTFS:
     # Etape 7 : Récupérer les ids des destinations, c'est à dire les stops après la ville (StopSequence > StopSequence de la ville)
     def get_stops_destinations(self):
         stops_trip_id = self.get_stops_trajets().assign(temps_ville = "", stop_id_ville = "")
+
         stop_ids_ville = self.stop_time_trip['stop_id']
         stop_ids_ville.index = self.stop_time_trip['trip_id']
         stop_id_ville_origine = stop_ids_ville.loc[stops_trip_id['trip_id']]
+
         stops_trip_id['stop_id_ville'] = stop_id_ville_origine.array
         time = self.stop_time_trip['departure_time'] #StopTime trip
         time.index = self.stop_time_trip['trip_id']
@@ -99,12 +112,11 @@ class AnalyzerGTFS:
         trajets = pd.merge(StopPoints, self.destinations, on=['stop_id','service_id','temps_ville','departure_time','trip_id','stop_id_ville','route_id']) # Merge entre StopPoints de la ville et les destinations pour récupérer les trajets faisant le lien entre les deux
         trajets_services = pd.merge(trajets.drop_duplicates(subset='service_id'), self.get_dates(), on='service_id') 
         trajets_services.assign(jour_suivant_depart = 0, jour_suivant_arrivee = 0)
-        '''
-        trajets_services['jour_suivant_depart'] = trajets_services.apply(lambda x : x['temps_ville'] > datetime.datetime(hour = 24), axis=1)
-        trajets_services['temps_ville'] = trajets_services.apply(lambda x : x['temps_ville']-datetime.datetime(hour = 24) if x['jour_suivant_depart'] else x['temps_ville'] , axis=1)
-        trajets_services['jour_suivant_arrivee'] = trajets_services.apply(lambda x : x['departure_time'] > datetime.datetime(hour = 24), axis=1)
-        trajets_services['temps_ville'] = trajets_services.apply(lambda x : x['departure_time']-datetime.datetime(hour = 24) if x['jour_suivant_arrivee'] else x['departure_time'] , axis=1)
-        '''
+        # Rectification des temps de trajet si > 24h
+        trajets_services['jour_suivant_depart'] = trajets_services.apply(lambda x : x['temps_ville'] > 24*3600, axis=1)
+        trajets_services['temps_ville'] = trajets_services.apply(lambda x : x['temps_ville']-24*3600 if x['jour_suivant_depart'] else x['temps_ville'] , axis=1)
+        trajets_services['jour_suivant_arrivee'] = trajets_services.apply(lambda x : x['departure_time'] > 24*3600, axis=1)
+        trajets_services['departure_time'] = trajets_services.apply(lambda x : x['departure_time'] - 24*3600 if x['jour_suivant_arrivee'] else x['departure_time'], axis=1)
         return trajets_services # Retourne tous les trajets faisant le lien entre la ville et la destination marchant sur les critères sélectionnés
 
     def list_of_cities(path):

@@ -13,6 +13,12 @@ st.set_page_config(layout="wide")
 def get_pos(lat, lng):
     return lat, lng
 
+def timestamp_to_date(timestamp):
+    timestamp = timestamp - 3600
+    if timestamp < 0:
+        timestamp = 3600 + timestamp
+    return datetime.datetime.fromtimestamp(timestamp).strftime('%H:%M:%S')
+
 # Dans le cache car effectué qu'une seule fois pour initialiser les variables au lancement de l'application
 @st.cache_data
 def init_var():
@@ -21,6 +27,7 @@ def init_var():
     previous_city = None
     destinations = {}
     destination_selected = None
+    color = ['red', 'black', 'gray']
     return zoom, fg, previous_city, destinations, destination_selected
 
 @st.cache_data
@@ -52,10 +59,11 @@ def load_analyzers():
     return analyzer_TER, analyzer_TGV, analyzer_INTERCITE
 
 def get_trips_to_city(city_id):
-    trips_TER = analyzer_TER.trajet_destination(city_id)
-    trips_TGV = analyzer_TGV.trajet_destination(city_id)
-    trips_INTERCITE = analyzer_INTERCITE.trajet_destination(city_id)
-    return trips_TER, trips_TGV, trips_INTERCITE
+    trips = {}
+    trips['TER'] = analyzer_TER.trajet_destination(city_id)
+    trips['TGV'] = analyzer_TGV.trajet_destination(city_id)
+    trips['INTERCITE'] = analyzer_INTERCITE.trajet_destination(city_id)
+    return trips
 
 def print_map(lat, lon, periode):
     date_min = periode[0].strftime('%Y%m%d')
@@ -130,46 +138,24 @@ with col2:
         destinations.keys()
     )
     if destination_selected is not None and destination_selected != '-':
-        trips_TER, trips_TGV, trips_INTERCITE = get_trips_to_city(destinations[destination_selected][2])
+        trips = get_trips_to_city(destinations[destination_selected][2])
         st.write("Trajets disponibles pour la destination : ", destination_selected)
-        if not trips_TER.empty:
-            with st.container():
-                st.subheader("TER :")
-                for row in trips_TER.itertuples():
-                    container = st.container(height=80,border=True)
-                    with container:
-                        col2_1, col2_2 = st.columns([0.5, 0.5], gap= 'small' , vertical_alignment= "top")
-                        with col2_1:
-                            st.write("Départ :", city_selected)
-                            st.write("Heure de départ : ", row.temps_ville)
-                            #st.write("Jour suivant départ : ", row.jour_suivant_depart)
-                        with col2_2:
-                            st.write("Arrivée :", destination_selected)
-                            st.write("Heure d'arrivée : ", row.departure_time)
-                            #st.write("Jour suivant arrivée : ", row.jour_suivant_arrivee)
-        if not trips_TGV.empty:
-            with st.container():
-                st.subheader("TGV :")
-                for row in trips_TGV.itertuples():
-                    container = st.container(height=80,border=True)
-                    with container:
-                        col2_1, col2_2 = st.columns([0.5, 0.5], gap= 'small' , vertical_alignment= "top")
-                        with col2_1:
-                            st.write("Départ :", city_selected)
-                            st.write("Heure de départ : ", row.temps_ville)
-                        with col2_2:
-                            st.write("Arrivée :", destination_selected)
-                            st.write("Heure d'arrivée : ", row.departure_time)
-        if not trips_INTERCITE.empty:
-            with st.container():
-                st.subheader("INTERCITE :")
-                for row in trips_INTERCITE.itertuples():
-                    container = st.container(height=80,border=True)
-                    with container:
-                        col2_1, col2_2 = st.columns([0.5, 0.5], gap= 'small' , vertical_alignment= "top")
-                        with col2_1:
-                            st.write("Départ :", city_selected)
-                            st.write("Heure de départ : ", row.temps_ville)
-                        with col2_2:
-                            st.write("Arrivée :", destination_selected)
-                            st.write("Heure d'arrivée : ", row.departure_time)
+        for key in trips.keys():
+            if not trips[key].empty:
+                with st.container():
+                    st.subheader(key + " :")
+                    for row in trips[key].itertuples():
+                        container = st.container(height=80,border=True)
+                        with container:
+                            col2_1, col2_2 = st.columns([0.5, 0.5], gap= 'small' , vertical_alignment= "top")
+                            with col2_1:
+                                st.write("Départ :", city_selected)
+                                st.write("Heure de départ : ", timestamp_to_date(row.temps_ville))
+                                date_dep = row.date + datetime.timedelta(days = row.jour_suivant_depart)
+                                st.write("Jour de départ : ", date_dep)
+                            with col2_2:
+                                st.write("Arrivée :", destination_selected)
+                                st.write("Heure d'arrivée : ", timestamp_to_date(row.departure_time))
+                                date_arr = row.date + datetime.timedelta(days = row.jour_suivant_arrivee)
+                                st.write("Jour d'arrivée' : ", date_arr)
+
