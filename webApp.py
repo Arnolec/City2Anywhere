@@ -4,7 +4,7 @@ from streamlit_folium import st_folium
 import streamlit as st
 import datetime
 import back_requests as br
-import utils
+#import utils
 
 st.set_page_config(layout="wide")
 
@@ -56,22 +56,21 @@ with col2:
     if destination_selected is not None and destination_selected != '-':
         trips = br.get_trips_to_city(destinations[destination_selected][2], analyzers)
         st.write("Trajets disponibles pour la destination : ", destination_selected)
-        for key in trips.keys():
-            if not trips[key].empty:
+        for key, values in trips.items():
+            if not values.empty:
                 with st.container():
                     st.subheader(key + " :")
-                    for row in trips[key].itertuples():
+                    for row in values.itertuples():
                         container = st.container(height=120,border=True)
                         with container:
                             col2_1, col2_2 = st.columns([0.5, 0.5], gap= 'small' , vertical_alignment= "top")
                             with col2_1:
                                 st.write("Départ :", city_selected)
-                                st.write("Heure de départ : ", utils.timestamp_to_date(row.temps_ville))
-                                date_dep = row.date + datetime.timedelta(days = row.jour_suivant_depart)
-                                st.write("Jour de départ : ", date_dep)
+                                st.write("Heure de départ : ", row.horaire_depart)
+                                #date_dep = row.date + datetime.timedelta(days = row.jour_suivant_depart)
+                                #st.write("Jour de départ : ", date_dep)
                             with col2_2:
                                 st.write("Arrivée :", destination_selected)
-                                st.write("Heure d'arrivée : ", utils.timestamp_to_date(row.departure_time))
-                                date_arr = row.date + datetime.timedelta(days = row.jour_suivant_arrivee)
-                                st.write("Jour d'arrivée : ", date_arr)
+                                st.write("Heure d'arrivée : ", row.horaire_arrivee)
+                                #date_arr = row.date + datetime.timedelta(days = row.jour_suivant_arrivee)
 

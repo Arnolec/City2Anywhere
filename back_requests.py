@@ -47,8 +47,8 @@ def load_analyzers():
 @st.cache_data
 def get_trips_to_city(city_id, _analyzers): # analyzers pas hashable donc paramètre pas pris en compte pour cache
     trips = {}
-    for key in _analyzers.keys():
-        trips[key] = _analyzers[key].trajet_destination(city_id)
+    for key, analyzer in _analyzers.items():
+        trips[key] = analyzer.trajet_destination(city_id)
     return trips
 
 @st.cache_data
@@ -58,9 +58,8 @@ def print_map(lat, lon, periode, _analyzers):
 
     destinations_duplicates = {}
 
-    for key in _analyzers.keys():
-        if not _analyzers[key].destinations:
-            destinations_duplicates[key] = _analyzers[key].get_destinations(lat, lon, date_min, date_max)
+    for key, analyzer in _analyzers.items():
+        destinations_duplicates[key] = analyzer.get_destinations(lat, lon, date_min, date_max)
 
     destinations = {}
     i = 0
@@ -69,8 +68,7 @@ def print_map(lat, lon, periode, _analyzers):
     fg.add_child(fl.Marker([float(lat), float(lon)], popup="Ville de départ", icon=fl.Icon(color="blue")))
     color = ['red', 'black', 'gray']
 
-    for key in destinations_duplicates.keys():
-        destinations_analyzer = destinations_duplicates[key]
+    for key, destinations_analyzer in destinations_duplicates.items():
         for row in destinations_analyzer.itertuples():
             fg.add_child(fl.Marker([float(row.stop_lat), float(row.stop_lon)], popup=row.stop_name, icon=fl.Icon(color=color[i])))
             destinations[row.stop_name] = (row.stop_lat, row.stop_lon, row.stop_id)

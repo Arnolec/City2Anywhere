@@ -38,9 +38,10 @@ class AnalyzerGTFS:
         self.stop_times = pd.read_csv('Data/'+ path +'/stop_times.txt')[['trip_id', 'stop_id', 'departure_time']]
         self.stops = pd.read_csv('Data/'+ path +'/stops.txt')[['stop_id', 'stop_name', 'stop_lat', 'stop_lon', 'parent_station']]
         self.trips = pd.read_csv('Data/'+ path +'/trips.txt')[['service_id', 'trip_id', 'route_id']]
-        self.calendar_dates.date = pd.to_datetime(self.calendar_dates["date"], format='%Y%m%d').dt.date
+        self.calendar_dates['date']= pd.to_datetime(self.calendar_dates["date"], format='%Y%m%d').dt.date
+        self.calendar_dates['date'] = self.calendar_dates.apply(lambda x : datetime.combine(x['date'], datetime.min.time()), axis=1)
         self.calendar_dates = self.calendar_dates.drop_duplicates(subset='service_id')
-        self.stop_times.departure_time = self.stop_times.apply(lambda x : date_to_timestamp(x['departure_time']), axis=1)
+        self.stop_times['departure_time'] = self.stop_times.apply(lambda x : pd.Timedelta(x['departure_time']), axis=1)
         self.stops['parent_station'] = self.stops['parent_station'].fillna('')
     
     # Etape 1 : Récupérer les stops de la ville / StopArea
@@ -108,19 +109,17 @@ class AnalyzerGTFS:
     def villes_proches(self,lat,long):
         return self.stops[(self.stops['stop_lat'] > lat-SEUIL_DISTANCE) & (self.stops['stop_lat'] < lat+SEUIL_DISTANCE) & (self.stops['stop_lon'] > long-SEUIL_DISTANCE) & (self.stops['stop_lon'] < long+SEUIL_DISTANCE) & self.stops['stop_id'].str.contains('StopArea')]
     
-    # Pas très efficace, à améliorer
+    # Pas très efficace, à améliorer -> Trouver la source et enlever les doublons auparavant
     def trajet_destination(self,villeDestination):
         destinationsParentStation = pd.merge(self.destinations, self.stops, on='stop_id') # Merge entre les destinations et les stops pour récupérer les parent_station
         StopPoints = destinationsParentStation[villeDestination == destinationsParentStation['parent_station']] # Récupérer les StopPoints de la ville de destination
         trajets = pd.merge(StopPoints, self.destinations, on=['stop_id','service_id','temps_ville','departure_time','trip_id','stop_id_ville','route_id']) # Merge entre StopPoints de la ville et les destinations pour récupérer les trajets faisant le lien entre les deux
         trajets_services = pd.merge(trajets.drop_duplicates(subset='service_id'), self.get_dates(), on='service_id') 
-        trajets_services.assign(jour_suivant_depart = 0, jour_suivant_arrivee = 0)
-        # Rectification des temps de trajet si > 24h
-        trajets_services['jour_suivant_depart'] = trajets_services.apply(lambda x : x['temps_ville'] > 24*3600, axis=1)
-        trajets_services['temps_ville'] = trajets_services.apply(lambda x : x['temps_ville']-24*3600 if x['jour_suivant_depart'] else x['temps_ville'] , axis=1)
-        trajets_services['jour_suivant_arrivee'] = trajets_services.apply(lambda x : x['departure_time'] > 24*3600, axis=1)
-        trajets_services['departure_time'] = trajets_services.apply(lambda x : x['departure_time'] - 24*3600 if x['jour_suivant_arrivee'] else x['departure_time'], axis=1)
-        return trajets_services # Retourne tous les trajets faisant le lien entre la ville et la destination marchant sur les critères sélectionnés
+        trajets_services.assign(horaire_depart = "", horaire_arrivee = "")
+        trajets_services['horaire_depart'] = trajets_services.apply(lambda x : x['temps_ville']+x['date'], axis=1)
+        trajets_services['horaire_arrivee'] = trajets_services.apply(lambda x : x['departure_time']+x['date'], axis=1)
+        trajets_to_destinations = trajets_services.drop_duplicates(subset=['horaire_depart','horaire_arrivee'])
+        return trajets_to_destinations # Retourne tous les trajets faisant le lien entre la ville et la destination marchant sur les critères sélectionnés
 
     @staticmethod
     def list_of_cities(path):
@@ -130,5 +129,5 @@ class AnalyzerGTFS:
     def load_search(self, lat, lon ,date_min= datetime.today,date_max = datetime.today):
         self.lat = lat
         self.lon = lon
-        self.date_min = datetime.strptime(date_min, '%Y%m%d').date()
-        self.date_max = datetime.strptime(date_max, '%Y%m%d').date()
+        self.date_min = datetime.strptime(date_min, '%Y%m%d')
+        self.date_max = datetime.strptime(date_max, '%Y%m%d')
