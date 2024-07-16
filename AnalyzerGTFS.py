@@ -5,6 +5,8 @@ from datetime import datetime
 from datetime import timedelta
 import re
 
+SEUIL_DISTANCE = 0.03
+
 def date_to_timestamp(date):
     pattern = re.compile(r'(\d{2}):(\d{2}):(\d{2})')
     if pattern.match(date) is None:
@@ -93,7 +95,8 @@ class AnalyzerGTFS:
         return self.destinations['stop_id']
     
     # Etape 8 : Récupérer les destinations
-    def get_destinations(self):
+    def get_destinations(self, lat, lon, date_min = datetime.today, date_max = datetime.today):
+        self.load_search(lat, lon, date_min, date_max)
         destinations_uniques = self.get_stops_destinations()
         destinations_StopPoint = pd.merge(destinations_uniques, self.stops, on='stop_id')
         destinationSet = set(destinations_StopPoint['parent_station'].array)
@@ -103,10 +106,10 @@ class AnalyzerGTFS:
     
     # Retourne les stopArea proche du point de départ
     def villes_proches(self,lat,long):
-        return self.stops[(self.stops['stop_lat'] > lat-0.03) & (self.stops['stop_lat'] < lat+0.03) & (self.stops['stop_lon'] > long-0.03) & (self.stops['stop_lon'] < long+0.03) & self.stops['stop_id'].str.contains('StopArea')]
+        return self.stops[(self.stops['stop_lat'] > lat-SEUIL_DISTANCE) & (self.stops['stop_lat'] < lat+SEUIL_DISTANCE) & (self.stops['stop_lon'] > long-SEUIL_DISTANCE) & (self.stops['stop_lon'] < long+SEUIL_DISTANCE) & self.stops['stop_id'].str.contains('StopArea')]
     
     # Pas très efficace, à améliorer
-    def trajet_destination(self,villeDestination): 
+    def trajet_destination(self,villeDestination):
         destinationsParentStation = pd.merge(self.destinations, self.stops, on='stop_id') # Merge entre les destinations et les stops pour récupérer les parent_station
         StopPoints = destinationsParentStation[villeDestination == destinationsParentStation['parent_station']] # Récupérer les StopPoints de la ville de destination
         trajets = pd.merge(StopPoints, self.destinations, on=['stop_id','service_id','temps_ville','departure_time','trip_id','stop_id_ville','route_id']) # Merge entre StopPoints de la ville et les destinations pour récupérer les trajets faisant le lien entre les deux
@@ -119,6 +122,7 @@ class AnalyzerGTFS:
         trajets_services['departure_time'] = trajets_services.apply(lambda x : x['departure_time'] - 24*3600 if x['jour_suivant_arrivee'] else x['departure_time'], axis=1)
         return trajets_services # Retourne tous les trajets faisant le lien entre la ville et la destination marchant sur les critères sélectionnés
 
+    @staticmethod
     def list_of_cities(path):
         stops = pd.read_csv('Data/'+ path +'/stops.txt')[['stop_id', 'stop_name', 'stop_lat', 'stop_lon', 'parent_station']]
         return stops[stops['stop_id'].str.contains('StopArea')][['stop_name','stop_lat','stop_lon','stop_id']]

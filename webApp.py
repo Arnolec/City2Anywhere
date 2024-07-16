@@ -1,104 +1,20 @@
 # webApp.py
 import folium as fl
-from AnalyzerGTFS import AnalyzerGTFS as Ana
 from streamlit_folium import st_folium
 import streamlit as st
-import pandas as pd
 import datetime
-import geopandas as gpd
-from shapely.geometry import Point
+import back_requests as br
+import utils
 
 st.set_page_config(layout="wide")
 
-def get_pos(lat, lng):
-    return lat, lng
 
-def timestamp_to_date(timestamp):
-    timestamp = timestamp - 3600
-    if timestamp < 0:
-        timestamp = 3600 + timestamp
-    return datetime.datetime.fromtimestamp(timestamp).strftime('%H:%M:%S')
 
-# Dans le cache car effectué qu'une seule fois pour initialiser les variables au lancement de l'application
-@st.cache_data
-def init_var():
-    zoom = 5
-    fg = fl.FeatureGroup("Markers")
-    previous_city = None
-    destinations = {}
-    destination_selected = None
-    color = ['red', 'black', 'gray']
-    return zoom, fg, previous_city, destinations, destination_selected
 
-@st.cache_data
-def get_cities():
-    cities = {}
-    cities_TER = Ana.list_of_cities('TER') 
-    cities_TGV = Ana.list_of_cities('TGV') 
-    cities_INTERCITE = Ana.list_of_cities('INTERCITE') 
-    cities_concat = pd.concat([cities_TER, cities_TGV, cities_INTERCITE])
-    cities_concat = cities_concat.drop_duplicates(subset=['stop_id'])
-
-    for row in cities_concat.itertuples():
-        cities[row.stop_name] = (row.stop_lat, row.stop_lon, row.stop_id)
-    return cities
-
-@st.cache_data
-def get_center():
-    serie = pd.Series(cities)
-    serie_points = serie.apply(lambda x: Point(x[0], x[1]))
-    geo_series = gpd.GeoSeries(serie_points)
-    centroid = geo_series.unary_union.centroid
-    return (centroid.x, centroid.y)
-
-@st.cache_data
-def load_analyzers():
-    analyzer_TER = Ana(path ='TER')
-    analyzer_TGV = Ana(path = 'TGV')
-    analyzer_INTERCITE = Ana(path = 'INTERCITE')
-    return analyzer_TER, analyzer_TGV, analyzer_INTERCITE
-
-def get_trips_to_city(city_id):
-    trips = {}
-    trips['TER'] = analyzer_TER.trajet_destination(city_id)
-    trips['TGV'] = analyzer_TGV.trajet_destination(city_id)
-    trips['INTERCITE'] = analyzer_INTERCITE.trajet_destination(city_id)
-    return trips
-
-def print_map(lat, lon, periode):
-    date_min = periode[0].strftime('%Y%m%d')
-    date_max = periode[1].strftime('%Y%m%d')
-
-    analyzer_TER.load_search(lat, lon, date_min, date_max)
-    destinations_TER = analyzer_TER.get_destinations()
-    
-    analyzer_TGV.load_search(lat, lon, date_min, date_max)
-    destinations_TGV = analyzer_TGV.get_destinations()
-
-    analyzer_INTERCITE.load_search(lat, lon, date_min, date_max)
-    destinations_INTERCITE = analyzer_INTERCITE.get_destinations()
-
-    destinations = {}
-    destinations['-'] = (lat, lon, '0')
-    fg = fl.FeatureGroup("Markers")
-    fg.add_child(fl.Marker([float(lat), float(lon)], popup="Ville de départ", icon=fl.Icon(color="blue")))
-
-    for row in destinations_TER.itertuples():
-        fg.add_child(fl.Marker([float(row.stop_lat), float(row.stop_lon)], popup=row.stop_name, icon=fl.Icon(color="red")))
-        destinations[row.stop_name] = (row.stop_lat, row.stop_lon, row.stop_id)
-    for row in destinations_TGV.itertuples():
-        fg.add_child(fl.Marker([float(row.stop_lat), float(row.stop_lon)], popup=row.stop_name, icon=fl.Icon(color="black")))
-        destinations[row.stop_name] = (row.stop_lat, row.stop_lon, row.stop_id)
-    for row in destinations_INTERCITE.itertuples():
-        fg.add_child(fl.Marker([float(row.stop_lat), float(row.stop_lon)], popup=row.stop_name, icon=fl.Icon(color="gray")))
-        destinations[row.stop_name] = (row.stop_lat, row.stop_lon, row.stop_id)
-    #fg.on('click', lambda e: print(e))
-    return fg, destinations
-
-analyzer_TER,analyzer_TGV,analyzer_INTERCITE = load_analyzers()
-cities = get_cities()
-centroid_cities = get_center()
-zoom_map, fg, previous_city, destinations, destination_selected = init_var()
+analyzers = br.load_analyzers()
+cities = br.get_cities()
+centroid_cities = br.get_center(cities)
+zoom_map, fg, previous_city, destinations, destination_selected = br.init_var()
 
 col1, col2= st.columns([0.6,0.4], gap= 'medium', vertical_alignment= "top")
 
@@ -119,7 +35,7 @@ with col1:
     if (city_selected is not None) and (city_selected != previous_city):
         previous_city = city_selected
         if len(date) == 2:
-            fg, destinations = print_map(cities[city_selected][0], cities[city_selected][1], date)
+            fg, destinations, analyzers = br.print_map(cities[city_selected][0], cities[city_selected][1], date, analyzers)
 
     m = fl.Map()
 
@@ -138,24 +54,24 @@ with col2:
         destinations.keys()
     )
     if destination_selected is not None and destination_selected != '-':
-        trips = get_trips_to_city(destinations[destination_selected][2])
+        trips = br.get_trips_to_city(destinations[destination_selected][2], analyzers)
         st.write("Trajets disponibles pour la destination : ", destination_selected)
         for key in trips.keys():
             if not trips[key].empty:
                 with st.container():
                     st.subheader(key + " :")
                     for row in trips[key].itertuples():
-                        container = st.container(height=80,border=True)
+                        container = st.container(height=120,border=True)
                         with container:
                             col2_1, col2_2 = st.columns([0.5, 0.5], gap= 'small' , vertical_alignment= "top")
                             with col2_1:
                                 st.write("Départ :", city_selected)
-                                st.write("Heure de départ : ", timestamp_to_date(row.temps_ville))
+                                st.write("Heure de départ : ", utils.timestamp_to_date(row.temps_ville))
                                 date_dep = row.date + datetime.timedelta(days = row.jour_suivant_depart)
                                 st.write("Jour de départ : ", date_dep)
                             with col2_2:
                                 st.write("Arrivée :", destination_selected)
-                                st.write("Heure d'arrivée : ", timestamp_to_date(row.departure_time))
+                                st.write("Heure d'arrivée : ", utils.timestamp_to_date(row.departure_time))
                                 date_arr = row.date + datetime.timedelta(days = row.jour_suivant_arrivee)
-                                st.write("Jour d'arrivée' : ", date_arr)
+                                st.write("Jour d'arrivée : ", date_arr)
 
