@@ -38,10 +38,10 @@ class AnalyzerGTFS:
         self.stop_times = pd.read_csv('Data/'+ path +'/stop_times.txt')[['trip_id', 'stop_id', 'departure_time']]
         self.stops = pd.read_csv('Data/'+ path +'/stops.txt')[['stop_id', 'stop_name', 'stop_lat', 'stop_lon', 'parent_station']]
         self.trips = pd.read_csv('Data/'+ path +'/trips.txt')[['service_id', 'trip_id', 'route_id']]
-        self.calendar_dates['date']= pd.to_datetime(self.calendar_dates["date"], format='%Y%m%d').dt.date
-        self.calendar_dates['date'] = self.calendar_dates.apply(lambda x : datetime.combine(x['date'], datetime.min.time()), axis=1)
-        self.calendar_dates = self.calendar_dates.drop_duplicates(subset='service_id')
-        self.stop_times['departure_time'] = self.stop_times.apply(lambda x : pd.Timedelta(x['departure_time']), axis=1)
+        self.calendar_dates['date']= pd.to_datetime(self.calendar_dates["date"], format='%Y%m%d')
+        #self.calendar_dates['date'] = self.calendar_dates.apply(lambda x : datetime.combine(x['date'], datetime.min.time()), axis=1)
+        #self.calendar_dates = self.calendar_dates.drop_duplicates(subset='service_id')
+        self.stop_times['departure_time'] = pd.to_timedelta(self.stop_times['departure_time'])
         self.stops['parent_station'] = self.stops['parent_station'].fillna('')
     
     # Etape 1 : Récupérer les stops de la ville / StopArea
@@ -71,8 +71,7 @@ class AnalyzerGTFS:
     
     # Etape 5 : Récupérer les trajets des services fonctionnant sur les dates données
     def get_trajets(self):
-        services_uniques = self.get_dates().drop_duplicates(subset='service_id')
-        return pd.merge(services_uniques, self.trip, on='service_id')
+        return pd.merge(self.get_dates(), self.trip, on='service_id')
     
     # Etape 6 : Récupérer les stops des trajets corrects
     def get_stops_trajets(self):
