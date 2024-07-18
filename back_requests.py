@@ -1,13 +1,13 @@
 
 import folium as fl
-from AnalyzerGTFS import AnalyzerGTFS as Ana
+from AnalyzerV2 import AnalyzerGTFS as Ana
 import pandas as pd
 import streamlit as st
 import geopandas as gpd
 from shapely.geometry import Point
 # Dans le cache car effectué qu'une seule fois pour initialiser les variables au lancement de l'application
 @st.cache_data
-def init_var():
+def init_var() -> tuple[int,fl.FeatureGroup,str,dict[str,tuple[float,float,str]],str]:
     zoom = 5
     fg = fl.FeatureGroup("Markers")
     previous_city = None
@@ -16,7 +16,7 @@ def init_var():
     return zoom, fg, previous_city, destinations, destination_selected
 
 @st.cache_data
-def get_cities():
+def get_cities() -> dict[str,tuple[float,float,str]]:
     cities = {}
     cities_TER = Ana.list_of_cities('TER') 
     cities_TGV = Ana.list_of_cities('TGV') 
@@ -29,7 +29,7 @@ def get_cities():
     return cities
 
 @st.cache_data
-def get_center(cities):
+def get_center(cities : dict) -> tuple[float,float]:
     serie = pd.Series(cities)
     serie_points = serie.apply(lambda x: Point(x[0], x[1]))
     geo_series = gpd.GeoSeries(serie_points)
@@ -37,7 +37,7 @@ def get_center(cities):
     return (centroid.x, centroid.y)
 
 @st.cache_data
-def load_analyzers():
+def load_analyzers() -> dict:
     analyzers = {}
     analyzers['TER'] = Ana(path ='TER')
     analyzers['TGV'] = Ana(path = 'TGV')
@@ -45,27 +45,27 @@ def load_analyzers():
     return analyzers
 
 @st.cache_data
-def get_trips_to_city(city_id, _analyzers): # analyzers pas hashable donc paramètre pas pris en compte pour cache
+def get_trips_to_city(city_lat : float,city_lon : float, _analyzers : dict[str,Ana]) -> dict[str,pd.DataFrame]: # analyzers pas hashable donc paramètre pas pris en compte pour cache
     trips = {}
     for key, analyzer in _analyzers.items():
-        trips[key] = analyzer.trajet_destination(city_id)
+        trips[key] = analyzer.get_trajets(city_lat, city_lon)
     return trips
 
 @st.cache_data
-def print_map(lat, lon, periode, _analyzers):
+def print_map(lat : float, lon : float, periode : tuple, _analyzers : dict[str,Ana]) -> tuple[fl.FeatureGroup, dict[str,tuple[float,float,str]], dict[str,Ana]]:
     date_min = periode[0].strftime('%Y%m%d')
     date_max = periode[1].strftime('%Y%m%d')
 
     destinations_duplicates = {}
 
     for key, analyzer in _analyzers.items():
-        destinations_duplicates[key] = analyzer.get_destinations(lat, lon, date_min, date_max)
+        destinations_duplicates[key] = analyzer.get_set_destinations(lat, lon, date_min, date_max)
 
     destinations = {}
     i = 0
     destinations['-'] = (lat, lon, '0')
     fg = fl.FeatureGroup("Markers")
-    fg.add_child(fl.Marker([float(lat), float(lon)], popup="Ville de départ", icon=fl.Icon(color="blue")))
+    fg.add_child(fl.Marker([lat, lon], popup="Ville de départ", icon=fl.Icon(color="blue")))
     color = ['red', 'black', 'gray']
 
     for key, destinations_analyzer in destinations_duplicates.items():

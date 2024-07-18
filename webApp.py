@@ -8,9 +8,6 @@ import back_requests as br
 
 st.set_page_config(layout="wide")
 
-
-
-
 analyzers = br.load_analyzers()
 cities = br.get_cities()
 centroid_cities = br.get_center(cities)
@@ -54,7 +51,7 @@ with col2:
         destinations.keys()
     )
     if destination_selected is not None and destination_selected != '-':
-        trips = br.get_trips_to_city(destinations[destination_selected][2], analyzers)
+        trips = br.get_trips_to_city(destinations[destination_selected][0],destinations[destination_selected][1], analyzers)
         st.write("Trajets disponibles pour la destination : ", destination_selected)
         for key, values in trips.items():
             if not values.empty:

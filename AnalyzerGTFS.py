@@ -7,6 +7,8 @@ import re
 
 SEUIL_DISTANCE = 0.03
 
+# Ancienne version de recherche de trajet, non optimisée
+
 def date_to_timestamp(date):
     pattern = re.compile(r'(\d{2}):(\d{2}):(\d{2})')
     if pattern.match(date) is None:
