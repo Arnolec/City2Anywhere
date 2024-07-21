@@ -1,5 +1,6 @@
 import pandas as pd
 from datetime import datetime
+from datetime import time
 import os
 
 MARGE_DISTANCE: float = 0.03
@@ -106,6 +107,7 @@ class AnalyzerGTFS:
         arrival_lon: float,
         date_min: datetime,
         date_max: datetime,
+        departure_time: time,
     ) -> pd.DataFrame:
         date_min = pd.to_datetime(date_min)
         date_max = pd.to_datetime(date_max)
@@ -125,6 +127,9 @@ class AnalyzerGTFS:
         ]
         trajets_avec_stops_depart: pd.DataFrame = self.stop_times[
             self.stop_times["stop_id"].isin(stops_depart["stop_id"])
+        ]
+        trajets_avec_stops_depart = trajets_avec_stops_depart[
+            trajets_avec_stops_depart["departure_time"] > departure_time
         ]
         trajets_avec_stops_arrivee: pd.DataFrame = self.stop_times[
             self.stop_times["stop_id"].isin(stops_arrivee["stop_id"])

@@ -21,7 +21,7 @@ with st.container():
             [0.4, 0.4, 0.2], gap="small", vertical_alignment="top"
         )
         with col_settings_1_1:
-            city_selected = st.selectbox("Sélectionnez une ville :", cities.keys())
+            city_selected = st.selectbox("Sélectionnez une ville :", cities.index)
         with col_settings_1_2:
             transport_type = st.multiselect(
                 "Type de transport :", ["TER", "TGV", "INTERCITE"], default=["TER", "TGV", "INTERCITE"]
@@ -38,21 +38,33 @@ with st.container():
 
     with col_settings_2:
         destinations_mixed_transport, destinations = br.get_destinations(
-            cities[city_selected][0], cities[city_selected][1], date, transport_type, analyzers
+            cities.loc[city_selected]["stop_lat"],
+            cities.loc[city_selected]["stop_lon"],
+            date,
+            transport_type,
+            analyzers,
         )
         destination_selected = st.selectbox("Destinations :", destinations.keys())
-        col_settings_2_1, col_settings_2_2 = st.columns([0.5, 0.5], gap="small", vertical_alignment="top")
+        col_settings_2_1, col_settings_2_2, col_settings_2_3 = st.columns(
+            [0.4, 0.3, 0.3], gap="small", vertical_alignment="top"
+        )
         with col_settings_2_1:
             sort = st.selectbox("Tri :", ["Jour", "Heure de départ", "Heure d'arrivée"])
         with col_settings_2_2:
             max_trips_printed = st.selectbox("Nombre de trajets affichés :", [5, 10, 25, "Tout afficher"])
+        with col_settings_2_3:
+            departure_time = st.time_input("Heure de départ :", datetime.time(8, 0), step=datetime.timedelta(hours=1))
 col1, col2 = st.columns([0.6, 0.4], gap="medium", vertical_alignment="top")
 
 with col1:
     if (city_selected is not None) and (city_selected != previous_city):
         previous_city = city_selected
         if len(date) == 2:
-            fg = br.print_map(cities[city_selected][0], cities[city_selected][1], destinations_mixed_transport)
+            fg = br.print_map(
+                cities.loc[city_selected]["stop_lat"],
+                cities.loc[city_selected]["stop_lon"],
+                destinations_mixed_transport,
+            )
 
     m = fl.Map()
 
@@ -63,8 +75,8 @@ with col1:
 with col2:
     if (destination_selected is not None) and (destination_selected != "-"):
         trips = br.get_trips_to_city(
-            cities[city_selected][0],
-            cities[city_selected][1],
+            cities.loc[city_selected]["stop_lat"],
+            cities.loc[city_selected]["stop_lon"],
             destinations[destination_selected][0],
             destinations[destination_selected][1],
             date,
@@ -72,6 +84,7 @@ with col2:
             sort,
             max_trips_printed,
             transport_type,
+            departure_time,
         )
     st.subheader("Trajets trouvé selon les critères : ", destination_selected)
     for key, values in trips.items():
