@@ -10,7 +10,7 @@ import back_requests as br
 st.set_page_config(layout="wide")
 
 analyzers = br.load_analyzers()
-cities = br.get_cities()
+cities = br.get_cities(analyzers)
 centroid_cities = br.get_center(cities)
 zoom_map, fg, previous_city, destinations, destination_selected, trips = br.init_var()
 
@@ -37,13 +37,14 @@ with st.container():
             )
 
     with col_settings_2:
-        destinations_mixed_transport, destinations = br.get_destinations(
-            cities.loc[city_selected]["stop_lat"],
-            cities.loc[city_selected]["stop_lon"],
-            date,
-            transport_type,
-            analyzers,
-        )
+        if (len(date)==2):
+            destinations_mixed_transport, destinations = br.get_destinations(
+                cities.loc[city_selected]["stop_lat"],
+                cities.loc[city_selected]["stop_lon"],
+                date,
+                transport_type,
+                analyzers,
+            )
         destination_selected = st.selectbox("Destinations :", destinations.keys())
         col_settings_2_1, col_settings_2_2, col_settings_2_3 = st.columns(
             [0.4, 0.3, 0.3], gap="small", vertical_alignment="top"

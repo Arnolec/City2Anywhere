@@ -23,15 +23,18 @@ def init_var() -> (
 
 
 @st.cache_data
-def get_cities() -> pd.DataFrame:
+def get_cities(_analyzers) -> pd.DataFrame:
     cities: pd.DataFrame = {}
-    cities_TER = Ana.list_of_cities("TER")
-    cities_TGV = Ana.list_of_cities("TGV")
-    cities_INTERCITE = Ana.list_of_cities("INTERCITE")
-    cities_concat = pd.concat([cities_TER, cities_TGV, cities_INTERCITE])
-    cities_concat = cities_concat.drop_duplicates(subset=["stop_id"])
-
-    cities = cities_concat[["stop_name", "stop_lat", "stop_lon", "stop_id"]].set_index("stop_name")
+    cities_analyzers: list[pd.DataFrame] = []
+    for analyzer in _analyzers.values():
+        cities_analyzers.append(analyzer.list_of_cities())
+    cities_concat = pd.concat(cities_analyzers)
+    cities_concat_index = cities_concat.assign(ids = cities_concat.index)
+    sum_appearance_on_index = cities_concat_index.groupby("ids").sum().sort_values(by='number_of_appearance', ascending=False)
+    cities_concat = cities_concat[~cities_concat.index.duplicated(keep='first')]
+    cities_concat['number_of_appearance'] = sum_appearance_on_index['number_of_appearance']
+    cities_sorted = cities_concat.sort_values(by='number_of_appearance', ascending=False)
+    cities = cities_sorted[["stop_name", "stop_lat", "stop_lon"]].set_index("stop_name")
     return cities
 
 
