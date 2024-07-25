@@ -95,13 +95,15 @@ with col2:
                 for row in values.itertuples():
                     container = st.container(height=120, border=True)
                     with container:
-                        col2_1, col2_2 = st.columns([0.5, 0.5], gap="small", vertical_alignment="top")
+                        col2_1, col2_2, col2_3 = st.columns([0.4, 0.2,0.4], gap="small", vertical_alignment="top")
                         with col2_1:
                             st.write("Départ :", city_selected)
                             st.write("Heure de départ : ", row.horaire_depart)
-                            # date_dep = row.date + datetime.timedelta(days = row.jour_suivant_depart)
-                            # st.write("Jour de départ : ", date_dep)
                         with col2_2:
+                            st.write("Durée du trajet")
+                            duree = (row.departure_time_y - row.departure_time_x).total_seconds()
+                            print(duree)
+                            st.write(datetime.datetime.fromtimestamp(duree, tz = datetime.UTC).strftime('%Hh%M'))
+                        with col2_3:
                             st.write("Arrivée :", destination_selected)
                             st.write("Heure d'arrivée : ", row.horaire_arrivee)
-                            # date_arr = row.date + datetime.timedelta(days = row.jour_suivant_arrivee)
