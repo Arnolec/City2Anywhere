@@ -40,9 +40,6 @@ def get_cities(_analyzers) -> pd.DataFrame:
 
 @st.cache_data
 def get_center(cities: pd.DataFrame) -> tuple[float, float]:
-    # serie = pd.Series(cities)
-    # print(serie)
-    # serie_points = cities.apply(lambda x: Point(x['stop_lat'], x['stop_lon']))
     gdf: gpd.GeoDataFrame = gpd.GeoDataFrame(
         cities, geometry=gpd.points_from_xy(cities.stop_lat, cities.stop_lon), crs="EPSG:4326"
     )
@@ -67,7 +64,6 @@ def get_trips_to_city(
     arrival_lon: float,
     periode: tuple[datetime, datetime],
     _analyzers: dict[str, Ana],
-    sort: str,
     max_trips_printed: int | str,
     transport_type: list[str],
     departure_time: time,
@@ -75,17 +71,9 @@ def get_trips_to_city(
     date_min = periode[0]
     date_max = periode[1]
     trips_dict: dict[str, pd.DataFrame] = {}
-    dict_sort: dict[str, str] = {
-        "Jour": "horaire_depart",
-        "Heure de départ": "departure_time_x",
-        "Heure d'arrivée": "departure_time_y",
-    }
     if not isinstance(max_trips_printed, int):
         max_trips_printed = None
-    if sort not in dict_sort:
-        sort = "horaire_depart"
-    else:
-        sort = dict_sort[sort]
+
     datetime_departure = pd.Timedelta(hours=departure_time.hour)
 
     raw_trips_dict = get_raw_trips_to_city(
@@ -101,7 +89,7 @@ def get_trips_to_city(
     )
 
     for key, trips_df in raw_trips_dict.items():
-        trip = trips_df.sort_values(by=sort, ascending=True)
+        trip = trips_df.sort_values(by='horaire_depart', ascending=True)
         trips_dict[key] = trip.head(max_trips_printed)
     return trips_dict
 

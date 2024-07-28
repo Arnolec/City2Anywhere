@@ -118,17 +118,19 @@ class AnalyzerGTFS:
     ) -> pd.DataFrame:
         date_min = pd.to_datetime(date_min)
         date_max = pd.to_datetime(date_max)
-        stops_depart: pd.DataFrame = self.stops_id[
-            (self.stops_id["stop_lat"] > departure_lat - MARGE_DISTANCE)
-            & (self.stops_id["stop_lat"] < departure_lat + MARGE_DISTANCE)
-            & (self.stops_id["stop_lon"] > departure_lon - MARGE_DISTANCE)
-            & (self.stops_id["stop_lon"] < departure_lon + MARGE_DISTANCE)
+        stops_depart: pd.DataFrame = self.stops[
+            (self.stops["stop_lat"] > departure_lat - MARGE_DISTANCE)
+            & (self.stops["stop_lat"] < departure_lat + MARGE_DISTANCE)
+            & (self.stops["stop_lon"] > departure_lon - MARGE_DISTANCE)
+            & (self.stops["stop_lon"] < departure_lon + MARGE_DISTANCE)
+            & self.stops["parent_station"].str.contains("StopArea")
         ]
-        stops_arrivee: pd.DataFrame = self.stops_id[
-            (self.stops_id["stop_lat"] > arrival_lat - MARGE_DISTANCE / 2)
-            & (self.stops_id["stop_lat"] < arrival_lat + MARGE_DISTANCE / 2)
-            & (self.stops_id["stop_lon"] > arrival_lon - MARGE_DISTANCE / 2)
-            & (self.stops_id["stop_lon"] < arrival_lon + MARGE_DISTANCE / 2)
+        stops_arrivee: pd.DataFrame = self.stops[
+            (self.stops["stop_lat"] > arrival_lat - MARGE_DISTANCE / 2)
+            & (self.stops["stop_lat"] < arrival_lat + MARGE_DISTANCE / 2)
+            & (self.stops["stop_lon"] > arrival_lon - MARGE_DISTANCE / 2)
+            & (self.stops["stop_lon"] < arrival_lon + MARGE_DISTANCE / 2)
+            & self.stops["parent_station"].str.contains("StopArea")
         ]
         trajets_avec_stops_depart: pd.DataFrame = self.stop_times[
             self.stop_times["stop_id"].isin(stops_depart["stop_id"])
@@ -178,3 +180,15 @@ class AnalyzerGTFS:
         df_stop_area = df_stop_area.assign(number_of_appearance = appeareance_stop_area)
         self.list_cities = df_stop_area
         return df_stop_area
+
+'''
+analyzer = AnalyzerGTFS()
+analyzer.list_of_cities()
+stop_times = analyzer.stop_times
+stops = analyzer.stops
+
+direct_cities_list = analyzer.get_trajets(48.8422850,2.36489100,47.9078910,1.90424200, datetime(year = 2024, month = 7, day = 1), datetime(year = 2024, month = 8, day = 1), pd.Timedelta(hours = 6))
+#connections_cities = analyzer.list_cities[analyzer.list_cities['number_of_appearance'] > THRESHOLD_CONNECTION]
+print(direct_cities_list)
+
+'''

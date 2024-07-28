@@ -2,6 +2,7 @@
 import folium as fl
 from streamlit_folium import st_folium
 import streamlit as st
+import streamlit.components.v1 as components
 import datetime
 import back_requests as br
 
@@ -17,25 +18,23 @@ zoom_map, fg, previous_city, destinations, destination_selected, trips = br.init
 with st.container():
     col_settings_1, col_settings_2 = st.columns([0.6, 0.4], gap="small", vertical_alignment="top")
     with col_settings_1:
-        col_settings_1_1, col_settings_1_2, col_settings_1_3 = st.columns(
-            [0.4, 0.4, 0.2], gap="small", vertical_alignment="top"
+        col_settings_1_1, col_settings_1_2= st.columns(
+            [0.5,0.5], gap="small", vertical_alignment="top"
         )
         with col_settings_1_1:
             city_selected = st.selectbox("Sélectionnez une ville :", cities.index)
-        with col_settings_1_2:
-            transport_type = st.multiselect(
-                "Type de transport :", ["TER", "TGV", "INTERCITE"], default=["TER", "TGV", "INTERCITE"]
-            )
-        with col_settings_1_3:
             today = datetime.datetime.now()
             next_year = today.year + 1
             date = st.date_input(
-                "Période envisagée pour le séjour :",
+                "Période du départ :",
                 (today, today),
                 min_value=today,
                 max_value=datetime.datetime(next_year, today.month, today.day),
             )
-
+        with col_settings_1_2:
+            transport_type = st.multiselect(
+                "Type de transport :", ["TER", "TGV", "INTERCITE"], default=["TER", "TGV", "INTERCITE"]
+            )
     with col_settings_2:
         if (len(date)==2):
             destinations_mixed_transport, destinations = br.get_destinations(
@@ -46,15 +45,14 @@ with st.container():
                 analyzers,
             )
         destination_selected = st.selectbox("Destinations :", destinations.keys())
-        col_settings_2_1, col_settings_2_2, col_settings_2_3 = st.columns(
-            [0.4, 0.3, 0.3], gap="small", vertical_alignment="top"
+        col_settings_2_1, col_settings_2_2 = st.columns(
+            [0.5, 0.5], gap="small", vertical_alignment="top"
         )
         with col_settings_2_1:
-            sort = st.selectbox("Tri :", ["Jour", "Heure de départ", "Heure d'arrivée"])
+            departure_time = st.time_input("Heure de départ :", datetime.time(8, 0), step=datetime.timedelta(hours=1))
         with col_settings_2_2:
             max_trips_printed = st.selectbox("Nombre de trajets affichés :", [5, 10, 25, "Tout afficher"])
-        with col_settings_2_3:
-            departure_time = st.time_input("Heure de départ :", datetime.time(8, 0), step=datetime.timedelta(hours=1))
+
 col1, col2 = st.columns([0.6, 0.4], gap="medium", vertical_alignment="top")
 
 with col1:
@@ -82,12 +80,11 @@ with col2:
             destinations[destination_selected][1],
             date,
             analyzers,
-            sort,
             max_trips_printed,
             transport_type,
             departure_time,
         )
-    st.subheader("Trajets trouvé selon les critères : ", destination_selected)
+    st.subheader("Trajets : ", destination_selected)
     for key, values in trips.items():
         if not values.empty:
             with st.container():
@@ -95,15 +92,17 @@ with col2:
                 for row in values.itertuples():
                     container = st.container(height=120, border=True)
                     with container:
+                        if row.horaire_depart.day != row.horaire_arrivee.day:
+                            st.write("Trajet nocturne sur 2 jours, du ", datetime.datetime.strftime(row.horaire_depart,format = "%d-%m"), " au ", datetime.datetime.strftime(row.horaire_arrivee,format = "%d-%m"))
+                        else:
+                            st.write("Trajet du ", datetime.datetime.strftime(row.horaire_depart,format = "%d-%m"))
                         col2_1, col2_2, col2_3 = st.columns([0.4, 0.2,0.4], gap="small", vertical_alignment="top")
                         with col2_1:
-                            st.write("Départ :", city_selected)
-                            st.write("Heure de départ : ", row.horaire_depart)
+                            st.write(city_selected)
+                            st.write("Heure de départ : ", datetime.datetime.strftime(row.horaire_depart, format = "%Hh%M"))
                         with col2_2:
-                            st.write("Durée du trajet")
                             duree = (row.departure_time_y - row.departure_time_x).total_seconds()
-                            print(duree)
-                            st.write(datetime.datetime.fromtimestamp(duree, tz = datetime.UTC).strftime('%Hh%M'))
+                            st.write("Durée : ", datetime.datetime.fromtimestamp(duree, tz = datetime.UTC).strftime('%Hh%M')+ "")
                         with col2_3:
-                            st.write("Arrivée :", destination_selected)
-                            st.write("Heure d'arrivée : ", row.horaire_arrivee)
+                            st.write(destination_selected)
+                            st.write("Heure d'arrivée : ", datetime.datetime.strftime(row.horaire_arrivee, format = "%Hh%M"))
