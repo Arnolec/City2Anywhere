@@ -1,5 +1,6 @@
 import folium as fl
-from AnalyzerV2 import AnalyzerGTFS as Ana
+import utils
+from Analyzer import Analyzer
 import pandas as pd
 import streamlit as st
 import geopandas as gpd
@@ -23,17 +24,19 @@ def init_var() -> (
 
 
 @st.cache_data
-def get_cities(_analyzers) -> pd.DataFrame:
+def get_cities(_analyzers: dict[str, Analyzer]) -> pd.DataFrame:
     cities: pd.DataFrame = {}
     cities_analyzers: list[pd.DataFrame] = []
     for analyzer in _analyzers.values():
         cities_analyzers.append(analyzer.list_of_cities())
     cities_concat = pd.concat(cities_analyzers)
-    cities_concat_index = cities_concat.assign(ids = cities_concat.index)
-    sum_appearance_on_index = cities_concat_index.groupby("ids").sum().sort_values(by='number_of_appearance', ascending=False)
-    cities_concat = cities_concat[~cities_concat.index.duplicated(keep='first')]
-    cities_concat['number_of_appearance'] = sum_appearance_on_index['number_of_appearance']
-    cities_sorted = cities_concat.sort_values(by='number_of_appearance', ascending=False)
+    cities_concat_index = cities_concat.assign(ids=cities_concat.index)
+    sum_appearance_on_index = (
+        cities_concat_index.groupby("ids").sum().sort_values(by="number_of_appearance", ascending=False)
+    )
+    cities_concat = cities_concat[~cities_concat.index.duplicated(keep="first")]
+    cities_concat["number_of_appearance"] = sum_appearance_on_index["number_of_appearance"]
+    cities_sorted = cities_concat.sort_values(by="number_of_appearance", ascending=False)
     cities = cities_sorted[["stop_name", "stop_lat", "stop_lon"]].set_index("stop_name")
     return cities
 
@@ -48,11 +51,12 @@ def get_center(cities: pd.DataFrame) -> tuple[float, float]:
 
 
 @st.cache_data
-def load_analyzers() -> dict:
+def load_analyzers() -> dict[str, Analyzer]:
     analyzers = {}
-    analyzers["TER"] = Ana("TER")
-    analyzers["TGV"] = Ana("TGV")
-    analyzers["INTERCITE"] = Ana("INTERCITE")
+    analyzers["TER"] = utils.load_class_analyzer("TER")
+    analyzers["TGV"] = utils.load_class_analyzer("TGV")
+    analyzers["INTERCITE"] = utils.load_class_analyzer("INTERCITE")
+    analyzers["FLIXBUS"] = utils.load_class_analyzer("FLIXBUS")
     return analyzers
 
 
@@ -63,11 +67,11 @@ def get_trips_to_city(
     arrival_lat: float,
     arrival_lon: float,
     periode: tuple[datetime, datetime],
-    _analyzers: dict[str, Ana],
+    _analyzers: dict[str, Analyzer],
     max_trips_printed: int | str,
     transport_type: list[str],
     departure_time: time,
-) -> dict[str, pd.DataFrame]:  # analyzers pas hashable donc paramètre pas pris en compte pour cache
+) -> dict[str, pd.DataFrame]:
     date_min = periode[0]
     date_max = periode[1]
     trips_dict: dict[str, pd.DataFrame] = {}
@@ -89,7 +93,7 @@ def get_trips_to_city(
     )
 
     for key, trips_df in raw_trips_dict.items():
-        trip = trips_df.sort_values(by='horaire_depart', ascending=True)
+        trip = trips_df.sort_values(by="horaire_depart", ascending=True)
         trips_dict[key] = trip.head(max_trips_printed)
     return trips_dict
 
@@ -103,7 +107,7 @@ def get_raw_trips_to_city(
     arrival_lon: float,
     date_min: datetime,
     date_max: datetime,
-    _analyzers: dict[str, Ana],
+    _analyzers: dict[str, Analyzer],
     transport_type: list[str],
     departure_time: pd.Timedelta,
 ) -> dict[str, pd.DataFrame]:
@@ -118,7 +122,11 @@ def get_raw_trips_to_city(
 
 @st.cache_data
 def get_destinations(
-    lat: float, lon: float, periode: tuple[datetime, datetime], transport_type: tuple[str], _analyzers: dict[str, Ana]
+    lat: float,
+    lon: float,
+    periode: tuple[datetime, datetime],
+    transport_type: tuple[str],
+    _analyzers: dict[str, Analyzer],
 ) -> tuple[dict[str, pd.DataFrame], dict[str, tuple[float, float, str]]]:
     date_min = periode[0]
     date_max = periode[1]
@@ -143,7 +151,7 @@ def print_map(lat: float, lon: float, destinations: dict[str, pd.DataFrame]) -> 
     i = 0
     fg = fl.FeatureGroup("Markers")
     fg.add_child(fl.Marker([lat, lon], popup="Ville de départ", icon=fl.Icon(color="blue")))
-    color = {"TER": "red", "TGV": "black", "INTERCITE": "gray"}
+    color = {"TER": "red", "TGV": "black", "INTERCITE": "gray", "FLIXBUS": "green"}
     for key, destinations_analyzer in destinations.items():
         color_transport = color[key]
         for row in destinations_analyzer.itertuples():
