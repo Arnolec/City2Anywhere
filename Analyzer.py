@@ -6,7 +6,7 @@ import pandas as pd
 # Interface for the different analyzers
 class Analyzer(ABC):
     @abstractmethod
-    def get_trajets(
+    def find_trips_between_locations(
         self,
         departure_lat: float,
         departure_lon: float,
@@ -19,9 +19,9 @@ class Analyzer(ABC):
         pass
 
     @abstractmethod
-    def get_set_destinations(self, lat: float, lon: float, date_min: datetime, date_max: datetime) -> pd.DataFrame:
+    def find_destinations_from_location(self, lat: float, lon: float, date_min: datetime, date_max: datetime) -> pd.DataFrame:
         pass
 
     @abstractmethod
-    def list_of_cities(self) -> pd.DataFrame:
+    def get_list_of_cities(self) -> pd.DataFrame:
         pass

@@ -11,14 +11,12 @@ THRESHOLD_CONNECTION: int = 100
 
 class Analyzer_calendar_dates(Analyzer):
     arrets_depart: pd.DataFrame = pd.DataFrame()
-    list_cities: pd.DataFrame = pd.DataFrame()
+    city_list: pd.DataFrame = pd.DataFrame()
     stops: pd.DataFrame = pd.DataFrame()
     calendar_dates: pd.DataFrame = pd.DataFrame()
     routes: pd.DataFrame = pd.DataFrame()
     stop_times: pd.DataFrame = pd.DataFrame()
     trips: pd.DataFrame = pd.DataFrame()
-    lat: float = 0.0
-    lon: float = 0.0
     stops_id: pd.DataFrame = pd.DataFrame()
     stops_area: pd.DataFrame = pd.DataFrame()
     stop_times_trips: pd.DataFrame = pd.DataFrame()
@@ -40,14 +38,8 @@ class Analyzer_calendar_dates(Analyzer):
         self.stops_id = self.stops[~self.stops["parent_station"].isna()]
         self.stops_area = self.stops[self.stops["parent_station"].isna()]
 
-    def set_search_destinations(self, lat: float, lon: float, date_min: str, date_max: str) -> None:
-        self.lat = lat
-        self.lon = lon
-        self.date_min = pd.to_datetime(date_min, format="%Y%m%d")
-        self.date_max = pd.to_datetime(date_max, format="%Y%m%d")
-
     # Retourne les StopPoints proche du point de départ
-    def stops_proches(self, lat: float, lon: float):  # Stop ID pour Global, parent_station pour SNCF
+    def find_nearby_stops(self, lat: float, lon: float):  # Stop ID pour Global, parent_station pour SNCF
         return self.stops_id[
             (self.stops_id["stop_lat"] > lat - MARGE_DISTANCE)
             & (self.stops_id["stop_lat"] < lat + MARGE_DISTANCE)
@@ -55,8 +47,8 @@ class Analyzer_calendar_dates(Analyzer):
             & (self.stops_id["stop_lon"] < lon + MARGE_DISTANCE)
         ]
 
-    def trips_stops_proches(self, lat: float, lon: float) -> pd.Series:
-        self.nearby_stops: pd.DataFrame = self.stops_proches(lat, lon)
+    def get_trips_nearby_location(self, lat: float, lon: float) -> pd.Series:
+        self.nearby_stops: pd.DataFrame = self.find_nearby_stops(lat, lon)
         trips: pd.DataFrame = self.stop_times[self.stop_times["stop_id"].isin(self.nearby_stops["stop_id"])]
         # trips = pd.merge(self.stop_times_sorted, stops_proches, on = "stop_id")[['trip_id', 'stop_id', 'departure_time']]
         # trips: pd.DataFrame = self.stop_times.query('stop_id in @stops_proches["stop_id"]', engine='python')
@@ -64,10 +56,10 @@ class Analyzer_calendar_dates(Analyzer):
         trips_ids: pd.Series = self.arrets_depart["trip_id"]
         return trips_ids
 
-    def trips_dans_periode(self, lat: float, lon: float, date_min: datetime, date_max: datetime) -> pd.Series:
+    def filter_trips_within_period(self, lat: float, lon: float, date_min: datetime, date_max: datetime) -> pd.Series:
         date_min = pd.to_datetime(date_min)
         date_max = pd.to_datetime(date_max)
-        trips_ids: pd.Series = self.trips_stops_proches(lat, lon)
+        trips_ids: pd.Series = self.get_trips_nearby_location(lat, lon)
         trips: pd.DataFrame = self.trips[self.trips["trip_id"].isin(trips_ids)]
         services: pd.DataFrame = self.calendar_dates[self.calendar_dates["service_id"].isin(trips["service_id"])]
         services_dans_periode: pd.DataFrame = services[(services["date"] >= date_min) & (services["date"] <= date_max)]
@@ -75,8 +67,8 @@ class Analyzer_calendar_dates(Analyzer):
         trips_dans_periode: pd.DataFrame = trips[trips["service_id"].isin(services_dans_periode["service_id"])]
         return trips_dans_periode["trip_id"]
 
-    def get_set_destinations(self, lat: float, lon: float, date_min: datetime, date_max: datetime) -> pd.DataFrame:
-        trips_ids_dans_periode: pd.Series = self.trips_dans_periode(lat, lon, date_min, date_max)
+    def find_destinations_from_location(self, lat: float, lon: float, date_min: datetime, date_max: datetime) -> pd.DataFrame:
+        trips_ids_dans_periode: pd.Series = self.filter_trips_within_period(lat, lon, date_min, date_max)
         stop_times_arret_correct: pd.DataFrame = self.stop_times[
             self.stop_times["trip_id"].isin(trips_ids_dans_periode)
         ]
@@ -108,7 +100,7 @@ class Analyzer_calendar_dates(Analyzer):
 
         return destinations
 
-    def get_trajets(
+    def find_trips_between_locations(
         self,
         departure_lat,
         departure_lon,
@@ -158,7 +150,7 @@ class Analyzer_calendar_dates(Analyzer):
         return trajets
 
     @staticmethod
-    def list_of_cities_static(path: str) -> pd.DataFrame:
+    def get_list_of_cities_static(path: str) -> pd.DataFrame:
         stops: pd.DataFrame = pd.read_csv(os.path.join("Data", path, "stops.txt"))[
             ["stop_id", "stop_name", "stop_lat", "stop_lon", "parent_station"]
         ]
@@ -174,7 +166,7 @@ class Analyzer_calendar_dates(Analyzer):
         df_stop_area = df_stop_area.assign(number_of_appearance=appeareance_stop_area)
         return df_stop_area
 
-    def list_of_cities(self) -> pd.DataFrame:
+    def get_list_of_cities(self) -> pd.DataFrame:
         appearance_count = self.stop_times.groupby("stop_id").count()["trip_id"]
         appearance_stop_id = pd.merge(appearance_count, self.stops, on="stop_id")
         appeareance_stop_area = appearance_stop_id.groupby("parent_station").sum()["trip_id"]
@@ -182,5 +174,5 @@ class Analyzer_calendar_dates(Analyzer):
             ["stop_name", "stop_lat", "stop_lon", "stop_id"]
         ].set_index("stop_id")
         df_stop_area = df_stop_area.assign(number_of_appearance=appeareance_stop_area)
-        self.list_cities = df_stop_area
+        self.city_list = df_stop_area
         return df_stop_area
