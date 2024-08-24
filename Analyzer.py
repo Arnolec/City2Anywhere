@@ -12,14 +12,16 @@ class Analyzer(ABC):
         departure_lon: float,
         arrival_lat: float,
         arrival_lon: float,
-        date_min: datetime,
-        date_max: datetime,
+        start_date: datetime,
+        end_date: datetime,
         departure_time: pd.Timedelta,
     ) -> pd.DataFrame:
         pass
 
     @abstractmethod
-    def find_destinations_from_location(self, lat: float, lon: float, date_min: datetime, date_max: datetime) -> pd.DataFrame:
+    def find_destinations_from_location(
+        self, lat: float, lon: float, start_date: datetime, end_date: datetime
+    ) -> pd.DataFrame:
         pass
 
     @abstractmethod

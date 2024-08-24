@@ -3,14 +3,10 @@ from datetime import datetime
 import os
 from Analyzer import Analyzer
 
-MARGE_DISTANCE: float = 0.03
-THRESHOLD_CONNECTION: int = 100
+DISTANCE_MARGIN: float = 0.03
 
-# Nouvelle version de la classe AnalyzerGTFS, version qui est optimisée
-
-
-class Analyzer_calendar_dates(Analyzer):
-    arrets_depart: pd.DataFrame = pd.DataFrame()
+class AnalyzerCalendarDates(Analyzer):
+    unique_departures: pd.DataFrame = pd.DataFrame()
     city_list: pd.DataFrame = pd.DataFrame()
     stops: pd.DataFrame = pd.DataFrame()
     calendar_dates: pd.DataFrame = pd.DataFrame()
@@ -19,7 +15,6 @@ class Analyzer_calendar_dates(Analyzer):
     trips: pd.DataFrame = pd.DataFrame()
     stops_id: pd.DataFrame = pd.DataFrame()
     stops_area: pd.DataFrame = pd.DataFrame()
-    stop_times_trips: pd.DataFrame = pd.DataFrame()
     nearby_stops: pd.DataFrame = pd.DataFrame()
 
     def __init__(self, transport_type="TER"):
@@ -41,63 +36,64 @@ class Analyzer_calendar_dates(Analyzer):
     # Retourne les StopPoints proche du point de départ
     def find_nearby_stops(self, lat: float, lon: float):  # Stop ID pour Global, parent_station pour SNCF
         return self.stops_id[
-            (self.stops_id["stop_lat"] > lat - MARGE_DISTANCE)
-            & (self.stops_id["stop_lat"] < lat + MARGE_DISTANCE)
-            & (self.stops_id["stop_lon"] > lon - MARGE_DISTANCE)
-            & (self.stops_id["stop_lon"] < lon + MARGE_DISTANCE)
+            (self.stops_id["stop_lat"] > lat - DISTANCE_MARGIN)
+            & (self.stops_id["stop_lat"] < lat + DISTANCE_MARGIN)
+            & (self.stops_id["stop_lon"] > lon - DISTANCE_MARGIN)
+            & (self.stops_id["stop_lon"] < lon + DISTANCE_MARGIN)
         ]
 
     def get_trips_nearby_location(self, lat: float, lon: float) -> pd.Series:
         self.nearby_stops: pd.DataFrame = self.find_nearby_stops(lat, lon)
-        trips: pd.DataFrame = self.stop_times[self.stop_times["stop_id"].isin(self.nearby_stops["stop_id"])]
+        trips_containing_departure: pd.DataFrame = self.stop_times[self.stop_times["stop_id"].isin(self.nearby_stops["stop_id"])]
         # trips = pd.merge(self.stop_times_sorted, stops_proches, on = "stop_id")[['trip_id', 'stop_id', 'departure_time']]
         # trips: pd.DataFrame = self.stop_times.query('stop_id in @stops_proches["stop_id"]', engine='python')
-        self.arrets_depart = trips.drop_duplicates(subset="trip_id")
-        trips_ids: pd.Series = self.arrets_depart["trip_id"]
-        return trips_ids
+        self.unique_departures = trips_containing_departure.drop_duplicates(subset="trip_id")
+        trip_ids: pd.Series = self.unique_departures["trip_id"]
+        return trip_ids
 
-    def filter_trips_within_period(self, lat: float, lon: float, date_min: datetime, date_max: datetime) -> pd.Series:
-        date_min = pd.to_datetime(date_min)
-        date_max = pd.to_datetime(date_max)
-        trips_ids: pd.Series = self.get_trips_nearby_location(lat, lon)
-        trips: pd.DataFrame = self.trips[self.trips["trip_id"].isin(trips_ids)]
-        services: pd.DataFrame = self.calendar_dates[self.calendar_dates["service_id"].isin(trips["service_id"])]
-        services_dans_periode: pd.DataFrame = services[(services["date"] >= date_min) & (services["date"] <= date_max)]
-        services_dans_periode.drop_duplicates(subset="service_id")
-        trips_dans_periode: pd.DataFrame = trips[trips["service_id"].isin(services_dans_periode["service_id"])]
-        return trips_dans_periode["trip_id"]
+    def filter_trips_within_period(self, lat: float, lon: float, start_date: datetime, end_date: datetime) -> pd.Series:
+        start_date = pd.to_datetime(start_date)
+        end_date = pd.to_datetime(end_date)
+        trip_ids: pd.Series = self.get_trips_nearby_location(lat, lon)
+        relevant_trips: pd.DataFrame = self.trips[self.trips["trip_id"].isin(trip_ids)]
+        relevant_services: pd.DataFrame = self.calendar_dates[self.calendar_dates["service_id"].isin(relevant_trips["service_id"])]
+        services_within_period: pd.DataFrame = relevant_services[(relevant_services["date"] >= start_date) & (relevant_services["date"] <= end_date)]
+        services_within_period.drop_duplicates(subset="service_id")
+        trips_within_period: pd.DataFrame = relevant_trips[relevant_trips["service_id"].isin(services_within_period["service_id"])]
+        return trips_within_period["trip_id"]
 
-    def find_destinations_from_location(self, lat: float, lon: float, date_min: datetime, date_max: datetime) -> pd.DataFrame:
-        trips_ids_dans_periode: pd.Series = self.filter_trips_within_period(lat, lon, date_min, date_max)
-        stop_times_arret_correct: pd.DataFrame = self.stop_times[
-            self.stop_times["trip_id"].isin(trips_ids_dans_periode)
+    def find_destinations_from_location(
+        self, lat: float, lon: float, start_date: datetime, end_date: datetime
+    ) -> pd.DataFrame:
+        trip_ids_within_period: pd.Series = self.filter_trips_within_period(lat, lon, start_date, end_date)
+        stop_times_right_stops: pd.DataFrame = self.stop_times[
+            self.stop_times["trip_id"].isin(trip_ids_within_period)
         ]
-        stop_times_temps_superieur: pd.DataFrame = stop_times_arret_correct.assign(temps_depart="", stop_id_ville="")
+        cities_after_inital_departure: pd.DataFrame = stop_times_right_stops.assign(city_departure_time="", stop_id_ville="")
 
-        stop_ids_depart: pd.Series = self.arrets_depart["stop_id"]
-        stop_ids_depart.index = self.arrets_depart["trip_id"]
-        stop_id_depart = stop_ids_depart.loc[stop_times_temps_superieur["trip_id"]]
-        stop_times_temps_superieur["stop_id_ville"] = stop_id_depart.array
+        departure_stop_ids: pd.Series = self.unique_departures["stop_id"]
+        departure_stop_ids.index = self.unique_departures["trip_id"]
+        departure_id = departure_stop_ids.loc[cities_after_inital_departure["trip_id"]]
+        cities_after_inital_departure["stop_id_ville"] = departure_id.array
 
-        temps_depart: pd.Series = self.arrets_depart["departure_time"]  # StopTime trip
-        temps_depart.index = self.arrets_depart["trip_id"]
-        colonne_temps_depart = temps_depart.loc[stop_times_temps_superieur["trip_id"]]
-        stop_times_temps_superieur["temps_ville"] = colonne_temps_depart.array
+        departure_time: pd.Series = self.unique_departures["departure_time"]  # StopTime trip
+        departure_time.index = self.unique_departures["trip_id"]
+        column_departure_time = departure_time.loc[cities_after_inital_departure["trip_id"]]
+        cities_after_inital_departure["city_departure_time"] = column_departure_time.array
 
-        destinations_doublons_stop_points: pd.DataFrame = stop_times_temps_superieur[
-            stop_times_temps_superieur["departure_time"] > stop_times_temps_superieur["temps_ville"]
+        duplicate_destinations_stop_points: pd.DataFrame = cities_after_inital_departure[
+            cities_after_inital_departure["departure_time"] > cities_after_inital_departure["city_departure_time"]
         ]
-        destinations_doublons_stop_points = self.stops_id[
-            self.stops_id["stop_id"].isin(destinations_doublons_stop_points["stop_id"])
+        duplicate_destinations_stop_points = self.stops_id[
+            self.stops_id["stop_id"].isin(duplicate_destinations_stop_points["stop_id"])
         ]
-        destinations_doublons_stop_area: pd.DataFrame = self.stops_area[
-            self.stops_area["stop_id"].isin(destinations_doublons_stop_points["parent_station"])
+        duplicate_destinations_stop_area: pd.DataFrame = self.stops_area[
+            self.stops_area["stop_id"].isin(duplicate_destinations_stop_points["parent_station"])
         ]
-        destinations_stop_area = destinations_doublons_stop_area.drop_duplicates(subset="stop_id")
+        destinations_stop_area = duplicate_destinations_stop_area.drop_duplicates(subset="stop_id")
         destinations: pd.DataFrame = destinations_stop_area[
             ~destinations_stop_area["stop_id"].isin(self.nearby_stops["parent_station"])
         ]
-
         return destinations
 
     def find_trips_between_locations(
@@ -106,48 +102,48 @@ class Analyzer_calendar_dates(Analyzer):
         departure_lon,
         arrival_lat: float,
         arrival_lon: float,
-        date_min: datetime,
-        date_max: datetime,
+        start_date: datetime,
+        end_date: datetime,
         departure_time: pd.Timedelta,
     ) -> pd.DataFrame:
-        date_min = pd.to_datetime(date_min)
-        date_max = pd.to_datetime(date_max)
-        stops_depart: pd.DataFrame = self.stops_id[
-            (self.stops_id["stop_lat"] > departure_lat - MARGE_DISTANCE)
-            & (self.stops_id["stop_lat"] < departure_lat + MARGE_DISTANCE)
-            & (self.stops_id["stop_lon"] > departure_lon - MARGE_DISTANCE)
-            & (self.stops_id["stop_lon"] < departure_lon + MARGE_DISTANCE)
+        start_date = pd.to_datetime(start_date)
+        end_date = pd.to_datetime(end_date)
+        departure_stops: pd.DataFrame = self.stops_id[
+            (self.stops_id["stop_lat"] > departure_lat - DISTANCE_MARGIN)
+            & (self.stops_id["stop_lat"] < departure_lat + DISTANCE_MARGIN)
+            & (self.stops_id["stop_lon"] > departure_lon - DISTANCE_MARGIN)
+            & (self.stops_id["stop_lon"] < departure_lon + DISTANCE_MARGIN)
         ]
-        stops_arrivee: pd.DataFrame = self.stops_id[
-            (self.stops_id["stop_lat"] > arrival_lat - MARGE_DISTANCE / 2)
-            & (self.stops_id["stop_lat"] < arrival_lat + MARGE_DISTANCE / 2)
-            & (self.stops_id["stop_lon"] > arrival_lon - MARGE_DISTANCE / 2)
-            & (self.stops_id["stop_lon"] < arrival_lon + MARGE_DISTANCE / 2)
+        arrival_stops: pd.DataFrame = self.stops_id[
+            (self.stops_id["stop_lat"] > arrival_lat - DISTANCE_MARGIN / 2)
+            & (self.stops_id["stop_lat"] < arrival_lat + DISTANCE_MARGIN / 2)
+            & (self.stops_id["stop_lon"] > arrival_lon - DISTANCE_MARGIN / 2)
+            & (self.stops_id["stop_lon"] < arrival_lon + DISTANCE_MARGIN / 2)
         ]
-        trajets_avec_stops_depart: pd.DataFrame = self.stop_times[
-            self.stop_times["stop_id"].isin(stops_depart["stop_id"])
+        trips_containing_departure: pd.DataFrame = self.stop_times[
+            self.stop_times["stop_id"].isin(departure_stops["stop_id"])
         ]
-        trajets_avec_stops_depart = trajets_avec_stops_depart[
-            trajets_avec_stops_depart["departure_time"] > departure_time
+        trips_containing_departure = trips_containing_departure[
+            trips_containing_departure["departure_time"] > departure_time
         ]
-        trajets_avec_stops_arrivee: pd.DataFrame = self.stop_times[
-            self.stop_times["stop_id"].isin(stops_arrivee["stop_id"])
+        trips_containing_arrival: pd.DataFrame = self.stop_times[
+            self.stop_times["stop_id"].isin(arrival_stops["stop_id"])
         ]
-        trips_avec_depart_arrivee: pd.DataFrame = pd.merge(
-            trajets_avec_stops_depart, trajets_avec_stops_arrivee, on="trip_id"
+        trips_containing_both: pd.DataFrame = pd.merge(
+            trips_containing_departure, trips_containing_arrival, on="trip_id"
         )
-        trips_heure: pd.DataFrame = trips_avec_depart_arrivee[
-            trips_avec_depart_arrivee["departure_time_x"] < trips_avec_depart_arrivee["departure_time_y"]
+        trips_in_right_direction: pd.DataFrame = trips_containing_both[
+            trips_containing_both["departure_time_x"] < trips_containing_both["departure_time_y"]
         ]
-        trips: pd.DataFrame = pd.merge(trips_heure, self.trips, on="trip_id")
-        trips_et_jours: pd.DataFrame = pd.merge(trips, self.calendar_dates, on="service_id")
-        trajets: pd.DataFrame = trips_et_jours[
-            (trips_et_jours["date"] >= date_min) & (trips_et_jours["date"] <= date_max)
+        trips: pd.DataFrame = pd.merge(trips_in_right_direction, self.trips, on="trip_id")
+        trips_and_calendar_dates: pd.DataFrame = pd.merge(trips, self.calendar_dates, on="service_id")
+        valid_trips: pd.DataFrame = trips_and_calendar_dates[
+            (trips_and_calendar_dates["date"] >= start_date) & (trips_and_calendar_dates["date"] <= end_date)
         ]
-        trajets = trajets.assign(horaire_depart="", horaire_arrivee="")
-        trajets["horaire_depart"] = trajets["date"] + trajets["departure_time_x"]
-        trajets["horaire_arrivee"] = trajets["date"] + trajets["departure_time_y"]
-        return trajets
+        trips = valid_trips.assign(horaire_depart="", horaire_arrivee="")
+        trips["dep_time"] = trips["date"] + trips["departure_time_x"]
+        trips["arr_time"] = trips["date"] + trips["departure_time_y"]
+        return trips
 
     @staticmethod
     def get_list_of_cities_static(path: str) -> pd.DataFrame:
