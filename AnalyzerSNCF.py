@@ -45,8 +45,6 @@ class AnalyzerCalendarDates(Analyzer):
     def get_trips_nearby_location(self, lat: float, lon: float) -> pd.Series:
         self.nearby_stops: pd.DataFrame = self.find_nearby_stops(lat, lon)
         trips_containing_departure: pd.DataFrame = self.stop_times[self.stop_times["stop_id"].isin(self.nearby_stops["stop_id"])]
-        # trips = pd.merge(self.stop_times_sorted, stops_proches, on = "stop_id")[['trip_id', 'stop_id', 'departure_time']]
-        # trips: pd.DataFrame = self.stop_times.query('stop_id in @stops_proches["stop_id"]', engine='python')
         self.unique_departures = trips_containing_departure.drop_duplicates(subset="trip_id")
         trip_ids: pd.Series = self.unique_departures["trip_id"]
         return trip_ids
@@ -145,30 +143,12 @@ class AnalyzerCalendarDates(Analyzer):
         trips["arr_time"] = trips["date"] + trips["departure_time_y"]
         return trips
 
-    @staticmethod
-    def get_list_of_cities_static(path: str) -> pd.DataFrame:
-        stops: pd.DataFrame = pd.read_csv(os.path.join("Data", path, "stops.txt"))[
-            ["stop_id", "stop_name", "stop_lat", "stop_lon", "parent_station"]
-        ]
-        stop_times: pd.DataFrame = pd.read_csv(os.path.join("Data", path, "stop_times.txt"))[
-            ["trip_id", "stop_id", "departure_time"]
-        ]
-        appearance_count = stop_times.groupby("stop_id").count()["trip_id"]
-        appearance_stop_id = pd.merge(appearance_count, stops, on="stop_id")
-        appeareance_stop_area = appearance_stop_id.groupby("parent_station").sum()["trip_id"]
-        df_stop_area = stops[stops["stop_id"].str.contains("StopArea")][
-            ["stop_name", "stop_lat", "stop_lon", "stop_id"]
-        ].set_index("stop_id")
-        df_stop_area = df_stop_area.assign(number_of_appearance=appeareance_stop_area)
-        return df_stop_area
-
     def get_list_of_cities(self) -> pd.DataFrame:
         appearance_count = self.stop_times.groupby("stop_id").count()["trip_id"]
         appearance_stop_id = pd.merge(appearance_count, self.stops, on="stop_id")
         appeareance_stop_area = appearance_stop_id.groupby("parent_station").sum()["trip_id"]
-        df_stop_area = self.stops[self.stops["stop_id"].str.contains("StopArea")][
-            ["stop_name", "stop_lat", "stop_lon", "stop_id"]
-        ].set_index("stop_id")
+        df_stop_area = self.stops_area[["stop_id", "stop_name", "stop_lat", "stop_lon"]].copy()
+        df_stop_area.set_index("stop_id", inplace=True)
         df_stop_area = df_stop_area.assign(number_of_appearance=appeareance_stop_area)
         self.city_list = df_stop_area
         return df_stop_area
