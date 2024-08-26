@@ -50,8 +50,8 @@ class AnalyzerCalendar(Analyzer):
 
     # All trips that fits location, Step 2 of find_destinations_from_location
     def get_trips_nearby_location(self, lat: float, lon: float) -> pd.Series:
-        nearby_stops: pd.DataFrame = self.find_nearby_stops(lat, lon)
-        relevant_trips: pd.DataFrame = self.stop_times[self.stop_times["stop_id"].isin(nearby_stops["stop_id"])]
+        self.nearby_stops: pd.DataFrame = self.find_nearby_stops(lat, lon)
+        relevant_trips: pd.DataFrame = self.stop_times[self.stop_times["stop_id"].isin(self.nearby_stops["stop_id"])]
         self.unique_departures = relevant_trips.drop_duplicates(subset="trip_id")
         trip_ids: pd.Series = self.unique_departures["trip_id"]
         return trip_ids
@@ -119,6 +119,7 @@ class AnalyzerCalendar(Analyzer):
         ]
         duplicate_destinations_stops = self.stops[self.stops["stop_id"].isin(duplicate_destinations_stop_times["stop_id"])]
         destinations = duplicate_destinations_stops.drop_duplicates(subset="stop_id")
+        destinations = destinations[~destinations["stop_id"].isin(self.nearby_stops["stop_id"])]
         return destinations
 
     def find_trips_between_locations(
@@ -145,6 +146,7 @@ class AnalyzerCalendar(Analyzer):
         ]
         trips_containing_departure: pd.DataFrame = self.stop_times[self.stop_times["stop_id"].isin(departure_stops["stop_id"])]
         trips_containing_departure = trips_containing_departure[trips_containing_departure["departure_time"] > departure_time]
+        trips_containing_departure = trips_containing_departure.drop_duplicates(subset="trip_id")
         trips_containing_arrival: pd.DataFrame = self.stop_times[self.stop_times["stop_id"].isin(arrival_stops["stop_id"])]
         trips_containing_both: pd.DataFrame = pd.merge(trips_containing_departure, trips_containing_arrival, on="trip_id")
         trips_in_right_direction: pd.DataFrame = trips_containing_both[

@@ -1,0 +1,2 @@
+service_id,date,exception_type
+001-18-0850102024-M#FR,20241014,2

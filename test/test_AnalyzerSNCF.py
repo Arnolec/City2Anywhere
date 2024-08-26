@@ -1,7 +1,12 @@
 import pytest
 import pandas as pd
-from AnalyzerSNCF import AnalyzerCalendarDates as Analyzer
 from datetime import datetime
+import sys
+import os
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from AnalyzerSNCF import AnalyzerCalendarDates as Analyzer
+
 
 @pytest.fixture
 def analyzer() -> Analyzer:
@@ -147,7 +152,7 @@ def test_find_trips_multiple(analyzer) -> None:
 
 # Testing of analyzer.get_list_of_cities
 
-def test_list_of_cities_static(analyzer) -> None:
+def test_list_of_cities(analyzer) -> None:
     cities = analyzer.get_list_of_cities()
     assert cities.shape[0] == 11
     assert "Laval" in cities["stop_name"].values
