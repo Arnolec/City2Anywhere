@@ -75,11 +75,15 @@ class AnalyzerCalendar(Analyzer):
             ),
             days_ok_end=np.vectorize(lambda x: end_date if (end_date <= x) else x)(services_within_period["end_date"]),
         )
-        services_within_period["days_ok"] = services_within_period["days_ok_end"] - services_within_period["days_ok_start"]
+        services_within_period["days_ok"] = (
+            services_within_period["days_ok_end"] - services_within_period["days_ok_start"]
+        )
         # Optimisation de la ligne suivante à faire
         services_in_dates = services_within_period[services_within_period.apply(self.is_service_in_dates, axis=1)]
         services_in_dates.drop_duplicates(subset="service_id")
-        trips_dans_periode: pd.DataFrame = relevant_trips[relevant_trips["service_id"].isin(services_in_dates["service_id"])]
+        trips_dans_periode: pd.DataFrame = relevant_trips[
+            relevant_trips["service_id"].isin(services_in_dates["service_id"])
+        ]
         return trips_dans_periode["trip_id"]
 
     # Function to check if a service is within the date range
@@ -99,10 +103,10 @@ class AnalyzerCalendar(Analyzer):
         self, lat: float, lon: float, date_min: datetime, date_max: datetime
     ) -> pd.DataFrame:
         trip_ids_within_period: pd.Series = self.filter_trips_within_period(lat, lon, date_min, date_max)
-        stop_times_right_stops: pd.DataFrame = self.stop_times[
-            self.stop_times["trip_id"].isin(trip_ids_within_period)
-        ]
-        cities_after_inital_departure: pd.DataFrame = stop_times_right_stops.assign(city_departure_time="", city_stop_id="")
+        stop_times_right_stops: pd.DataFrame = self.stop_times[self.stop_times["trip_id"].isin(trip_ids_within_period)]
+        cities_after_inital_departure: pd.DataFrame = stop_times_right_stops.assign(
+            city_departure_time="", city_stop_id=""
+        )
 
         departure_stop_ids: pd.Series = self.unique_departures["stop_id"]
         departure_stop_ids.index = self.unique_departures["trip_id"]
@@ -117,7 +121,9 @@ class AnalyzerCalendar(Analyzer):
         duplicate_destinations_stop_times: pd.DataFrame = cities_after_inital_departure[
             cities_after_inital_departure["departure_time"] > cities_after_inital_departure["city_departure_time"]
         ]
-        duplicate_destinations_stops = self.stops[self.stops["stop_id"].isin(duplicate_destinations_stop_times["stop_id"])]
+        duplicate_destinations_stops = self.stops[
+            self.stops["stop_id"].isin(duplicate_destinations_stop_times["stop_id"])
+        ]
         destinations = duplicate_destinations_stops.drop_duplicates(subset="stop_id")
         destinations = destinations[~destinations["stop_id"].isin(self.nearby_stops["stop_id"])]
         return destinations
@@ -144,11 +150,19 @@ class AnalyzerCalendar(Analyzer):
             & (self.stops["stop_lon"] > arrival_lon - DISTANCE_MARGIN / 2)
             & (self.stops["stop_lon"] < arrival_lon + DISTANCE_MARGIN / 2)
         ]
-        trips_containing_departure: pd.DataFrame = self.stop_times[self.stop_times["stop_id"].isin(departure_stops["stop_id"])]
-        trips_containing_departure = trips_containing_departure[trips_containing_departure["departure_time"] > departure_time]
+        trips_containing_departure: pd.DataFrame = self.stop_times[
+            self.stop_times["stop_id"].isin(departure_stops["stop_id"])
+        ]
+        trips_containing_departure = trips_containing_departure[
+            trips_containing_departure["departure_time"] > departure_time
+        ]
         trips_containing_departure = trips_containing_departure.drop_duplicates(subset="trip_id")
-        trips_containing_arrival: pd.DataFrame = self.stop_times[self.stop_times["stop_id"].isin(arrival_stops["stop_id"])]
-        trips_containing_both: pd.DataFrame = pd.merge(trips_containing_departure, trips_containing_arrival, on="trip_id")
+        trips_containing_arrival: pd.DataFrame = self.stop_times[
+            self.stop_times["stop_id"].isin(arrival_stops["stop_id"])
+        ]
+        trips_containing_both: pd.DataFrame = pd.merge(
+            trips_containing_departure, trips_containing_arrival, on="trip_id"
+        )
         trips_in_right_direction: pd.DataFrame = trips_containing_both[
             trips_containing_both["departure_time_x"] < trips_containing_both["departure_time_y"]
         ]
@@ -193,12 +207,8 @@ class AnalyzerCalendar(Analyzer):
             df = df[df.apply(lambda x: True if x.iloc[monday_index + x.date.weekday()] == 1 else False, axis=1)]
             dataframe_concat = pd.concat([dataframe_concat, df])
         dataframe_valid_dates = pd.merge(trips, dataframe_concat, on="service_id")
-        dataframe_valid_dates["dep_time"] = (
-            dataframe_valid_dates["date"] + dataframe_valid_dates["departure_time_x"]
-        )
-        dataframe_valid_dates["arr_time"] = (
-            dataframe_valid_dates["date"] + dataframe_valid_dates["departure_time_y"]
-        )
+        dataframe_valid_dates["dep_time"] = dataframe_valid_dates["date"] + dataframe_valid_dates["departure_time_x"]
+        dataframe_valid_dates["arr_time"] = dataframe_valid_dates["date"] + dataframe_valid_dates["departure_time_y"]
         return dataframe_valid_dates
 
     def get_list_of_cities(self) -> pd.DataFrame:

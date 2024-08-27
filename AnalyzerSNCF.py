@@ -5,6 +5,7 @@ from Analyzer import Analyzer
 
 DISTANCE_MARGIN: float = 0.03
 
+
 class AnalyzerCalendarDates(Analyzer):
     unique_departures: pd.DataFrame = pd.DataFrame()
     city_list: pd.DataFrame = pd.DataFrame()
@@ -44,7 +45,9 @@ class AnalyzerCalendarDates(Analyzer):
 
     def get_trips_nearby_location(self, lat: float, lon: float) -> pd.Series:
         self.nearby_stops: pd.DataFrame = self.find_nearby_stops(lat, lon)
-        trips_containing_departure: pd.DataFrame = self.stop_times[self.stop_times["stop_id"].isin(self.nearby_stops["stop_id"])]
+        trips_containing_departure: pd.DataFrame = self.stop_times[
+            self.stop_times["stop_id"].isin(self.nearby_stops["stop_id"])
+        ]
         self.unique_departures = trips_containing_departure.drop_duplicates(subset="trip_id")
         trip_ids: pd.Series = self.unique_departures["trip_id"]
         return trip_ids
@@ -54,20 +57,26 @@ class AnalyzerCalendarDates(Analyzer):
         end_date = pd.to_datetime(end_date)
         trip_ids: pd.Series = self.get_trips_nearby_location(lat, lon)
         relevant_trips: pd.DataFrame = self.trips[self.trips["trip_id"].isin(trip_ids)]
-        relevant_services: pd.DataFrame = self.calendar_dates[self.calendar_dates["service_id"].isin(relevant_trips["service_id"])]
-        services_within_period: pd.DataFrame = relevant_services[(relevant_services["date"] >= start_date) & (relevant_services["date"] <= end_date)]
+        relevant_services: pd.DataFrame = self.calendar_dates[
+            self.calendar_dates["service_id"].isin(relevant_trips["service_id"])
+        ]
+        services_within_period: pd.DataFrame = relevant_services[
+            (relevant_services["date"] >= start_date) & (relevant_services["date"] <= end_date)
+        ]
         services_within_period.drop_duplicates(subset="service_id")
-        trips_within_period: pd.DataFrame = relevant_trips[relevant_trips["service_id"].isin(services_within_period["service_id"])]
+        trips_within_period: pd.DataFrame = relevant_trips[
+            relevant_trips["service_id"].isin(services_within_period["service_id"])
+        ]
         return trips_within_period["trip_id"]
 
     def find_destinations_from_location(
         self, lat: float, lon: float, start_date: datetime, end_date: datetime
     ) -> pd.DataFrame:
         trip_ids_within_period: pd.Series = self.filter_trips_within_period(lat, lon, start_date, end_date)
-        stop_times_right_stops: pd.DataFrame = self.stop_times[
-            self.stop_times["trip_id"].isin(trip_ids_within_period)
-        ]
-        cities_after_inital_departure: pd.DataFrame = stop_times_right_stops.assign(city_departure_time="", stop_id_ville="")
+        stop_times_right_stops: pd.DataFrame = self.stop_times[self.stop_times["trip_id"].isin(trip_ids_within_period)]
+        cities_after_inital_departure: pd.DataFrame = stop_times_right_stops.assign(
+            city_departure_time="", stop_id_ville=""
+        )
 
         departure_stop_ids: pd.Series = self.unique_departures["stop_id"]
         departure_stop_ids.index = self.unique_departures["trip_id"]

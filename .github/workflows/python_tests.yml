@@ -1,0 +1,33 @@
+name: Python Tests
+
+# Déclencheurs : à chaque push ou pull request sur la branche main
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Définir les jobs à exécuter
+jobs:
+  test:
+
+    # Le job s'exécute sur une machine virtuelle Ubuntu
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.12' # Choisissez la version de Python que vous utilisez
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Run tests
+      run: |
+        pytest

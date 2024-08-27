@@ -35,7 +35,7 @@ def fetch_cities(_analyzers: dict[str, Analyzer]) -> pd.DataFrame:
     cities_concat["number_of_appearance"] = sum_appearance_on_index["number_of_appearance"]
     cities_sorted = cities_concat.sort_values(by="number_of_appearance", ascending=False)
     cities = cities_sorted.set_index("stop_name")
-    cities = cities[~cities.index.duplicated(keep='first')]
+    cities = cities[~cities.index.duplicated(keep="first")]
     return cities
 
 
