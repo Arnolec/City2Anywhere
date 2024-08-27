@@ -16,15 +16,10 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
-
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '20'  # Spécifie l'utilisation de Node.js version 20
+      uses: actions/checkout@latest
 
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@latest
       with:
         python-version: '3.12' # Choisissez la version de Python que vous utilisez
 
