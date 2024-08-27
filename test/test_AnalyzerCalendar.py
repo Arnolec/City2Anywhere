@@ -3,7 +3,7 @@ import pandas as pd
 import sys
 from datetime import datetime
 
-sys.path.append("..") # Adds higher directory to python modules path.
+sys.path.append("..")  # Adds higher directory to python modules path.
 from AnalyzerCalendar import AnalyzerCalendar as Ana
 
 
