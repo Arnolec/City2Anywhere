@@ -65,7 +65,7 @@ class AnalyzerFlixbus(Analyzer):
         return trips_ids
 
     # All trips that fits calendar
-    #@profile
+    # @profile
     def trips_dans_periode(self, lat: float, lon: float, date_min: datetime, date_max: datetime) -> pd.Series:
         date_min = pd.to_datetime(date_min)
         date_max = pd.to_datetime(date_max)
@@ -102,7 +102,7 @@ class AnalyzerFlixbus(Analyzer):
             i += 1
         return False
 
-    #@profile
+    # @profile
     def get_set_destinations(self, lat: float, lon: float, date_min: datetime, date_max: datetime) -> pd.DataFrame:
         trips_ids_dans_periode: pd.Series = self.trips_dans_periode(lat, lon, date_min, date_max)
         stop_times_arret_correct: pd.DataFrame = self.stop_times[

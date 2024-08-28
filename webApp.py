@@ -5,13 +5,26 @@ import streamlit as st
 import datetime
 import back_requests as br
 from streamlit_extras.no_default_selectbox import selectbox
+import pandas as pd
 
 st.set_page_config(layout="wide")
 
 analyzers = br.load_analyzers()
 cities = br.fetch_cities(analyzers)
 centroid_cities = br.fetch_center(cities)
-zoom_map, fg, previous_city, destinations, destination_selected, trips = br.initialize_variables()
+zoom_map, fg, previous_city, destinations, destination_selected, trips, trips_to_print = br.initialize_variables()
+
+if not "previous_trips" in st.session_state:
+    st.session_state.previous_trips = pd.DataFrame()
+if not "max_trips_printed" in st.session_state:
+    st.session_state.max_trips_printed = 10
+if not "trips_to_print" in st.session_state:
+    st.session_state.trips_to_print = pd.DataFrame()
+
+
+def callback_increment(max_trips: int, dataframe_len) -> None:
+    st.session_state.max_trips_printed = min(max_trips + 10, dataframe_len)
+
 
 with st.container():
     col_settings_1, col_settings_2 = st.columns([0.6, 0.4], gap="small", vertical_alignment="top")
@@ -47,8 +60,6 @@ with st.container():
         col_settings_2_1, col_settings_2_2 = st.columns([0.5, 0.5], gap="small", vertical_alignment="top")
         with col_settings_2_1:
             departure_time = st.time_input("Heure de départ :", datetime.time(8, 0), step=datetime.timedelta(hours=1))
-        with col_settings_2_2:
-            max_trips_printed = st.selectbox("Nombre de trajets affichés :", [5, 10, 25, "Tout afficher"])
 
 col1, col2 = st.columns([0.6, 0.4], gap="medium", vertical_alignment="top")
 
@@ -77,12 +88,16 @@ with col2:
             destinations.loc[destination_selected]["stop_lon"],
             date,
             analyzers,
-            max_trips_printed,
             transport_type,
             departure_time,
         )
+        if not trips.equals(st.session_state.previous_trips):
+            st.session_state.previous_trips = trips
+            st.session_state.max_trips_printed = 10
+
+    st.session_state.trips_to_print = trips.iloc[: st.session_state.max_trips_printed]
     st.subheader("Trajets : ", destination_selected)
-    for trip in trips.itertuples():
+    for trip in st.session_state.trips_to_print.itertuples():
         container = st.container(height=150, border=True)
         with container:
             if trip.dep_time.day != trip.arr_time.day:
@@ -108,3 +123,9 @@ with col2:
             with col2_3:
                 st.write(destination_selected)
                 st.write("Heure d'arrivée : ", datetime.datetime.strftime(trip.arr_time, format="%Hh%M"))
+    if len(trips) > st.session_state.max_trips_printed:
+        show_more = st.button(
+            "Afficher plus de trajets",
+            on_click=callback_increment,
+            args=(st.session_state.max_trips_printed, len(trips)),
+        )

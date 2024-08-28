@@ -10,14 +10,17 @@ from datetime import time
 
 
 @st.cache_data
-def initialize_variables() -> tuple[int, fl.FeatureGroup, Optional[str], pd.DataFrame, Optional[str], pd.DataFrame]:
+def initialize_variables() -> (
+    tuple[int, fl.FeatureGroup, Optional[str], pd.DataFrame, Optional[str], pd.DataFrame, pd.DataFrame]
+):
     zoom = 5
     fg = fl.FeatureGroup("Markers")
     previous_city: Optional[str] = None
     destinations: pd.DataFrame = pd.DataFrame()
     destination_selected: Optional[str] = None
     trips: pd.DataFrame = pd.DataFrame()
-    return zoom, fg, previous_city, destinations, destination_selected, trips
+    trips_to_print: pd.DataFrame = pd.DataFrame()
+    return zoom, fg, previous_city, destinations, destination_selected, trips, trips_to_print
 
 
 @st.cache_data
@@ -66,15 +69,11 @@ def get_trips_to_city(
     arrival_lon: float,
     periode: tuple[datetime, datetime],
     _analyzers: dict[str, Analyzer],
-    max_trips_printed: int | str,
     transport_type: list[str],
     departure_time: time,
 ) -> pd.DataFrame:
     date_min = periode[0]
     date_max = periode[1]
-    # trips_dict: dict[str, pd.DataFrame] = {}
-    if not isinstance(max_trips_printed, int):
-        max_trips_printed = None
 
     datetime_departure = pd.Timedelta(hours=departure_time.hour)
 
@@ -90,8 +89,7 @@ def get_trips_to_city(
         datetime_departure,
     )
 
-    trips = raw_trips.sort_values(by="horaire_depart", ascending=True)
-    trips = trips.head(max_trips_printed)
+    trips = raw_trips.sort_values(by="dep_time", ascending=True)
     return trips
 
 
