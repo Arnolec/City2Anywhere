@@ -9,9 +9,12 @@ on:
 jobs:
   checkout:
     runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.checkout_step.outputs.result }}
 
     steps:
       - name: Checkout code
+        id: checkout_step
         uses: actions/checkout@v4
 
   setup-python:
