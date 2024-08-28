@@ -7,21 +7,14 @@ on:
     branches: [main]
 
 jobs:
-  checkout:
+  setup:
     runs-on: ubuntu-latest
-    outputs:
-      code: ${{ steps.checkout_step.outputs.result }}
 
     steps:
       - name: Checkout code
         id: checkout_step
         uses: actions/checkout@v4
 
-  setup-python:
-    runs-on: ubuntu-latest
-    needs: checkout
-
-    steps:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
@@ -34,7 +27,7 @@ jobs:
 
   lint:
     runs-on: ubuntu-latest
-    needs: setup-python
+    needs: setup
 
     steps:
       - name: Lint with flake8
@@ -46,7 +39,7 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
-    needs: setup-python
+    needs: setup
 
     steps:
       - name: Run tests
