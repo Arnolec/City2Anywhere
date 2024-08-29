@@ -9,6 +9,7 @@ import pandas as pd
 
 st.set_page_config(layout="wide")
 
+br.update_data()
 analyzers = br.load_analyzers()
 cities = br.fetch_cities(analyzers)
 centroid_cities = br.fetch_center(cities)

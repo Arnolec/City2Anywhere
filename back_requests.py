@@ -7,6 +7,7 @@ import geopandas as gpd
 from typing import Optional
 from datetime import datetime
 from datetime import time
+from data_updater import DataUpdater
 
 @st.cache_data
 def initialize_variables() -> (
@@ -20,6 +21,10 @@ def initialize_variables() -> (
     trips: pd.DataFrame = pd.DataFrame()
     trips_to_print: pd.DataFrame = pd.DataFrame()
     return zoom, fg, previous_city, destinations, destination_selected, trips, trips_to_print
+
+@st.cache_data
+def update_data() -> None:
+    DataUpdater().update_data()
 
 
 @st.cache_data
