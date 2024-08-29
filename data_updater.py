@@ -27,45 +27,43 @@ class DataUpdater:
         else:
             dates = pd.read_csv(os.path.join("Data", transport, "calendar_dates.txt"))["date"]
         valid_datas = dates[dates > int(datetime.now().strftime("%Y%m%d"))].count()
-        percentage_valid_datas = valid_datas / len(dates)
-        if percentage_valid_datas < 1 - PERCENTAGE_NON_VALID_DATAS:
-            return True
-        return False
+        percentage_valid_datas = (valid_datas / len(dates))
+        return percentage_valid_datas < 1 - PERCENTAGE_NON_VALID_DATAS
 
     def update_data(self):
         for transport in self.updatable_data:
-            if self.is_updatable_data(transport):
-                # Étape 1: Télécharger le fichier ZIP
-                url = self.dict_update_url[transport]  # Remplacez par l'URL réelle
-                response = requests.get(url)
-                if response.status_code != 200:
-                    print(f"Erreur lors du téléchargement du fichier ZIP pour {transport}")
-                    return None
+            if not self.is_updatable_data(transport): continue 
+            # Étape 1: Télécharger le fichier ZIP
+            url = self.dict_update_url[transport]  # Remplacez par l'URL réelle
+            response = requests.get(url)
+            if response.status_code != 200:
+                print(f"Erreur lors du téléchargement du fichier ZIP pour {transport}")
+                return None
 
-                # Utiliser le répertoire courant (là où le script est exécuté)
-                script_dir = os.getcwd()
+            # Utiliser le répertoire courant (là où le script est exécuté)
+            script_dir = os.getcwd()
 
-                # Créer un sous-répertoire 'temp' pour stocker le fichier ZIP temporairement
-                temp_dir = os.path.join(script_dir, "temp")
-                os.makedirs(temp_dir, exist_ok=True)
+            # Créer un sous-répertoire 'temp' pour stocker le fichier ZIP temporairement
+            temp_dir = os.path.join(script_dir, "temp")
+            os.makedirs(temp_dir, exist_ok=True)
 
-                # Chemin pour enregistrer le fichier ZIP temporairement
-                zip_temp_path = os.path.join(temp_dir, "temp_file.zip")
+            # Chemin pour enregistrer le fichier ZIP temporairement
+            zip_temp_path = os.path.join(temp_dir, "temp_file.zip")
 
-                # Étape 2: Enregistrer le fichier ZIP dans le dossier temp
-                with open(zip_temp_path, "wb") as temp_zip_file:
-                    temp_zip_file.write(response.content)
+            # Étape 2: Enregistrer le fichier ZIP dans le dossier temp
+            with open(zip_temp_path, "wb") as temp_zip_file:
+                temp_zip_file.write(response.content)
 
-                # Étape 3: Décompression du fichier ZIP dans le dossier test_data
-                destination_directory = os.path.join(script_dir, "Data", transport)
+            # Étape 3: Décompression du fichier ZIP dans le dossier test_data
+            destination_directory = os.path.join(script_dir, "Data", transport)
 
-                # Créer le répertoire test_data s'il n'existe pas
-                os.makedirs(destination_directory, exist_ok=True)
+            # Créer le répertoire test_data s'il n'existe pas
+            os.makedirs(destination_directory, exist_ok=True)
 
-                # Ouvrir et extraire le contenu du ZIP, en écrasant les fichiers existants
-                with zipfile.ZipFile(zip_temp_path, "r") as zip_ref:
-                    zip_ref.extractall(destination_directory)
+            # Ouvrir et extraire le contenu du ZIP, en écrasant les fichiers existants
+            with zipfile.ZipFile(zip_temp_path, "r") as zip_ref:
+                zip_ref.extractall(destination_directory)
 
-                # Suppression du fichier ZIP temporaire et du répertoire temp
-                os.remove(zip_temp_path)
-                os.rmdir(temp_dir)
+            # Suppression du fichier ZIP temporaire et du répertoire temp
+            os.remove(zip_temp_path)
+            os.rmdir(temp_dir)
