@@ -3,6 +3,7 @@ from datetime import datetime
 import os
 import numpy as np
 from Analyzer import Analyzer
+import pytz
 
 DISTANCE_MARGIN: float = 0.05
 
@@ -20,6 +21,7 @@ class AnalyzerCalendar(Analyzer):
     lon: float = 0.0
     nearby_stops: pd.DataFrame = pd.DataFrame()
     monday_integer_index: int = 0
+    timezone : str = "UTC"
 
     def __init__(self, transport_type="FLIXBUS"):
         self.calendar_dates = pd.read_csv(os.path.join("Data", transport_type, "calendar_dates.txt"))
@@ -27,9 +29,14 @@ class AnalyzerCalendar(Analyzer):
         self.stop_times = pd.read_csv(os.path.join("Data", transport_type, "stop_times.txt"))[
             ["trip_id", "stop_id", "departure_time"]
         ]
-        self.stops = pd.read_csv(os.path.join("Data", transport_type, "stops.txt"))[
-            ["stop_id", "stop_name", "stop_lat", "stop_lon"]
-        ]
+        agency = pd.read_csv(os.path.join("Data", transport_type, "agency.txt"))
+        self.timezone = agency["agency_timezone"].iloc[0]
+        stops = pd.read_csv(os.path.join("Data", transport_type, "stops.txt"))
+        if "stop_timezone" in stops.columns:
+            self.stops = stops[["stop_id", "stop_name", "stop_lat", "stop_lon", "stop_timezone"]]
+        else:
+            self.stops = stops[["stop_id", "stop_name", "stop_lat", "stop_lon"]]
+            self.stops["stop_timezone"] = self.timezone
         self.trips = pd.read_csv(os.path.join("Data", transport_type, "trips.txt"))[
             ["service_id", "trip_id", "route_id"]
         ]
@@ -150,16 +157,12 @@ class AnalyzerCalendar(Analyzer):
             & (self.stops["stop_lon"] > arrival_lon - DISTANCE_MARGIN/2)
             & (self.stops["stop_lon"] < arrival_lon + DISTANCE_MARGIN/2)
         ]
-        trips_containing_departure: pd.DataFrame = self.stop_times[
-            self.stop_times["stop_id"].isin(departure_stops["stop_id"])
-        ]
+        trips_containing_departure: pd.DataFrame = pd.merge(departure_stops, self.stop_times, on="stop_id")
         trips_containing_departure = trips_containing_departure[
             trips_containing_departure["departure_time"] > departure_time
         ]
         trips_containing_departure = trips_containing_departure.drop_duplicates(subset="trip_id")
-        trips_containing_arrival: pd.DataFrame = self.stop_times[
-            self.stop_times["stop_id"].isin(arrival_stops["stop_id"])
-        ]
+        trips_containing_arrival: pd.DataFrame = pd.merge(arrival_stops, self.stop_times, on="stop_id")
         trips_containing_both: pd.DataFrame = pd.merge(
             trips_containing_departure, trips_containing_arrival, on="trip_id"
         )
@@ -209,6 +212,8 @@ class AnalyzerCalendar(Analyzer):
         dataframe_valid_dates = pd.merge(trips, dataframe_concat, on="service_id")
         dataframe_valid_dates["dep_time"] = dataframe_valid_dates["date"] + dataframe_valid_dates["departure_time_x"]
         dataframe_valid_dates["arr_time"] = dataframe_valid_dates["date"] + dataframe_valid_dates["departure_time_y"]
+        dataframe_valid_dates["dep_time"] = dataframe_valid_dates.apply(lambda x: x["dep_time"].replace(tzinfo = pytz.timezone(self.timezone)).astimezone(tz=x["stop_timezone_x"]), axis=1)
+        dataframe_valid_dates["arr_time"] = dataframe_valid_dates.apply(lambda x: x["arr_time"].replace(tzinfo = pytz.timezone(self.timezone)).astimezone(tz=x["stop_timezone_y"]), axis=1)
         return dataframe_valid_dates
 
     def get_list_of_cities(self) -> pd.DataFrame:

@@ -99,7 +99,7 @@ with col2:
     st.session_state.trips_to_print = trips.iloc[: st.session_state.max_trips_printed]
     st.subheader("Trajets : ", destination_selected)
     for trip in st.session_state.trips_to_print.itertuples():
-        container = st.container(height=150, border=True)
+        container = st.container(height=180, border=True)
         with container:
             if trip.dep_time.day != trip.arr_time.day:
                 st.write(
@@ -112,8 +112,10 @@ with col2:
                 st.write("Trajet du ", datetime.datetime.strftime(trip.dep_time, format="%d-%m"))
             col2_1, col2_2, col2_3 = st.columns([0.4, 0.2, 0.4], gap="small", vertical_alignment="top")
             with col2_1:
-                st.write(city_selected)
+                st.write(trip.stop_name_x)
                 st.write("Heure de départ : ", datetime.datetime.strftime(trip.dep_time, format="%Hh%M"))
+                if trip.dep_time.utcoffset() != trip.arr_time.utcoffset():
+                    st.write("Fuseau horaire : ", trip.stop_timezone_x)
             with col2_2:
                 duree = (trip.departure_time_y - trip.departure_time_x).total_seconds()
                 st.write(
@@ -122,8 +124,10 @@ with col2:
                 )
                 st.write("Transport : ", trip.transport_type)
             with col2_3:
-                st.write(destination_selected)
+                st.write(trip.stop_name_y)
                 st.write("Heure d'arrivée : ", datetime.datetime.strftime(trip.arr_time, format="%Hh%M"))
+                if trip.dep_time.utcoffset() != trip.arr_time.utcoffset():
+                    st.write("Fuseau horaire : ", trip.stop_timezone_y)
     if len(trips) > st.session_state.max_trips_printed:
         show_more = st.button(
             "Afficher plus de trajets",
