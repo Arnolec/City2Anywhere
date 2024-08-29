@@ -4,7 +4,7 @@ import os
 import numpy as np
 from Analyzer import Analyzer
 
-DISTANCE_MARGIN: float = 0.03
+DISTANCE_MARGIN: float = 0.05
 
 
 class AnalyzerCalendar(Analyzer):
@@ -42,10 +42,10 @@ class AnalyzerCalendar(Analyzer):
     # All stops near the location, Step 1 of find_destinations_from_location
     def find_nearby_stops(self, lat: float, lon: float):
         return self.stops[
-            (self.stops["stop_lat"] > lat - DISTANCE_MARGIN)
-            & (self.stops["stop_lat"] < lat + DISTANCE_MARGIN)
-            & (self.stops["stop_lon"] > lon - DISTANCE_MARGIN)
-            & (self.stops["stop_lon"] < lon + DISTANCE_MARGIN)
+            (self.stops["stop_lat"] > lat - DISTANCE_MARGIN/2)
+            & (self.stops["stop_lat"] < lat + DISTANCE_MARGIN/2)
+            & (self.stops["stop_lon"] > lon - DISTANCE_MARGIN/2)
+            & (self.stops["stop_lon"] < lon + DISTANCE_MARGIN/2)
         ]
 
     # All trips that fits location, Step 2 of find_destinations_from_location
@@ -139,16 +139,16 @@ class AnalyzerCalendar(Analyzer):
         departure_time: pd.Timedelta,
     ) -> pd.DataFrame:
         departure_stops: pd.DataFrame = self.stops[
-            (self.stops["stop_lat"] > departure_lat - DISTANCE_MARGIN)
-            & (self.stops["stop_lat"] < departure_lat + DISTANCE_MARGIN)
-            & (self.stops["stop_lon"] > departure_lon - DISTANCE_MARGIN)
-            & (self.stops["stop_lon"] < departure_lon + DISTANCE_MARGIN)
+            (self.stops["stop_lat"] > departure_lat - DISTANCE_MARGIN/2)
+            & (self.stops["stop_lat"] < departure_lat + DISTANCE_MARGIN/2)
+            & (self.stops["stop_lon"] > departure_lon - DISTANCE_MARGIN/2)
+            & (self.stops["stop_lon"] < departure_lon + DISTANCE_MARGIN/2)
         ]
         arrival_stops: pd.DataFrame = self.stops[
-            (self.stops["stop_lat"] > arrival_lat - DISTANCE_MARGIN / 2)
-            & (self.stops["stop_lat"] < arrival_lat + DISTANCE_MARGIN / 2)
-            & (self.stops["stop_lon"] > arrival_lon - DISTANCE_MARGIN / 2)
-            & (self.stops["stop_lon"] < arrival_lon + DISTANCE_MARGIN / 2)
+            (self.stops["stop_lat"] > arrival_lat - DISTANCE_MARGIN/2)
+            & (self.stops["stop_lat"] < arrival_lat + DISTANCE_MARGIN/2)
+            & (self.stops["stop_lon"] > arrival_lon - DISTANCE_MARGIN/2)
+            & (self.stops["stop_lon"] < arrival_lon + DISTANCE_MARGIN/2)
         ]
         trips_containing_departure: pd.DataFrame = self.stop_times[
             self.stop_times["stop_id"].isin(departure_stops["stop_id"])
@@ -215,5 +215,4 @@ class AnalyzerCalendar(Analyzer):
         appearance_count = self.stop_times.groupby("stop_id").count()["trip_id"]
         stop_cities = self.stops.set_index("stop_id")
         stop_cities = stop_cities.assign(number_of_appearance=appearance_count)
-        self.city_list = stop_cities
         return stop_cities

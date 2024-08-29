@@ -3,7 +3,7 @@ from datetime import datetime
 import os
 from Analyzer import Analyzer
 
-DISTANCE_MARGIN: float = 0.03
+DISTANCE_MARGIN: float = 0.05
 
 
 class AnalyzerCalendarDates(Analyzer):
@@ -37,10 +37,10 @@ class AnalyzerCalendarDates(Analyzer):
     # Retourne les StopPoints proche du point de départ
     def find_nearby_stops(self, lat: float, lon: float):  # Stop ID pour Global, parent_station pour SNCF
         return self.stops_id[
-            (self.stops_id["stop_lat"] > lat - DISTANCE_MARGIN)
-            & (self.stops_id["stop_lat"] < lat + DISTANCE_MARGIN)
-            & (self.stops_id["stop_lon"] > lon - DISTANCE_MARGIN)
-            & (self.stops_id["stop_lon"] < lon + DISTANCE_MARGIN)
+            (self.stops_id["stop_lat"] > lat - DISTANCE_MARGIN/2)
+            & (self.stops_id["stop_lat"] < lat + DISTANCE_MARGIN/2)
+            & (self.stops_id["stop_lon"] > lon - DISTANCE_MARGIN/2)
+            & (self.stops_id["stop_lon"] < lon + DISTANCE_MARGIN/2)
         ]
 
     def get_trips_nearby_location(self, lat: float, lon: float) -> pd.Series:
@@ -159,5 +159,4 @@ class AnalyzerCalendarDates(Analyzer):
         df_stop_area = self.stops_area[["stop_id", "stop_name", "stop_lat", "stop_lon"]].copy()
         df_stop_area.set_index("stop_id", inplace=True)
         df_stop_area = df_stop_area.assign(number_of_appearance=appeareance_stop_area)
-        self.city_list = df_stop_area
         return df_stop_area

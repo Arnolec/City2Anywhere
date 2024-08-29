@@ -8,7 +8,6 @@ from typing import Optional
 from datetime import datetime
 from datetime import time
 
-
 @st.cache_data
 def initialize_variables() -> (
     tuple[int, fl.FeatureGroup, Optional[str], pd.DataFrame, Optional[str], pd.DataFrame, pd.DataFrame]

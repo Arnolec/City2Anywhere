@@ -5,5 +5,3 @@ streamlit
 streamlit_folium
 streamlit_extras
 geopandas
-pytest
-flake8
