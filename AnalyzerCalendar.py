@@ -21,7 +21,7 @@ class AnalyzerCalendar(Analyzer):
     lon: float = 0.0
     nearby_stops: pd.DataFrame = pd.DataFrame()
     monday_integer_index: int = 0
-    timezone : str = "UTC"
+    timezone: str = "UTC"
 
     def __init__(self, transport_type="FLIXBUS"):
         self.calendar_dates = pd.read_csv(os.path.join("Data", transport_type, "calendar_dates.txt"))
@@ -49,10 +49,10 @@ class AnalyzerCalendar(Analyzer):
     # All stops near the location, Step 1 of find_destinations_from_location
     def find_nearby_stops(self, lat: float, lon: float):
         return self.stops[
-            (self.stops["stop_lat"] > lat - DISTANCE_MARGIN/2)
-            & (self.stops["stop_lat"] < lat + DISTANCE_MARGIN/2)
-            & (self.stops["stop_lon"] > lon - DISTANCE_MARGIN/2)
-            & (self.stops["stop_lon"] < lon + DISTANCE_MARGIN/2)
+            (self.stops["stop_lat"] > lat - DISTANCE_MARGIN / 2)
+            & (self.stops["stop_lat"] < lat + DISTANCE_MARGIN / 2)
+            & (self.stops["stop_lon"] > lon - DISTANCE_MARGIN / 2)
+            & (self.stops["stop_lon"] < lon + DISTANCE_MARGIN / 2)
         ]
 
     # All trips that fits location, Step 2 of find_destinations_from_location
@@ -146,16 +146,16 @@ class AnalyzerCalendar(Analyzer):
         departure_time: pd.Timedelta,
     ) -> pd.DataFrame:
         departure_stops: pd.DataFrame = self.stops[
-            (self.stops["stop_lat"] > departure_lat - DISTANCE_MARGIN/2)
-            & (self.stops["stop_lat"] < departure_lat + DISTANCE_MARGIN/2)
-            & (self.stops["stop_lon"] > departure_lon - DISTANCE_MARGIN/2)
-            & (self.stops["stop_lon"] < departure_lon + DISTANCE_MARGIN/2)
+            (self.stops["stop_lat"] > departure_lat - DISTANCE_MARGIN / 2)
+            & (self.stops["stop_lat"] < departure_lat + DISTANCE_MARGIN / 2)
+            & (self.stops["stop_lon"] > departure_lon - DISTANCE_MARGIN / 2)
+            & (self.stops["stop_lon"] < departure_lon + DISTANCE_MARGIN / 2)
         ]
         arrival_stops: pd.DataFrame = self.stops[
-            (self.stops["stop_lat"] > arrival_lat - DISTANCE_MARGIN/2)
-            & (self.stops["stop_lat"] < arrival_lat + DISTANCE_MARGIN/2)
-            & (self.stops["stop_lon"] > arrival_lon - DISTANCE_MARGIN/2)
-            & (self.stops["stop_lon"] < arrival_lon + DISTANCE_MARGIN/2)
+            (self.stops["stop_lat"] > arrival_lat - DISTANCE_MARGIN / 2)
+            & (self.stops["stop_lat"] < arrival_lat + DISTANCE_MARGIN / 2)
+            & (self.stops["stop_lon"] > arrival_lon - DISTANCE_MARGIN / 2)
+            & (self.stops["stop_lon"] < arrival_lon + DISTANCE_MARGIN / 2)
         ]
         trips_containing_departure: pd.DataFrame = pd.merge(departure_stops, self.stop_times, on="stop_id")
         trips_containing_departure = trips_containing_departure[
@@ -212,8 +212,14 @@ class AnalyzerCalendar(Analyzer):
         dataframe_valid_dates = pd.merge(trips, dataframe_concat, on="service_id")
         dataframe_valid_dates["dep_time"] = dataframe_valid_dates["date"] + dataframe_valid_dates["departure_time_x"]
         dataframe_valid_dates["arr_time"] = dataframe_valid_dates["date"] + dataframe_valid_dates["departure_time_y"]
-        dataframe_valid_dates["dep_time"] = dataframe_valid_dates.apply(lambda x: x["dep_time"].replace(tzinfo = pytz.timezone(self.timezone)).astimezone(tz=x["stop_timezone_x"]), axis=1)
-        dataframe_valid_dates["arr_time"] = dataframe_valid_dates.apply(lambda x: x["arr_time"].replace(tzinfo = pytz.timezone(self.timezone)).astimezone(tz=x["stop_timezone_y"]), axis=1)
+        dataframe_valid_dates["dep_time"] = dataframe_valid_dates.apply(
+            lambda x: x["dep_time"].replace(tzinfo=pytz.timezone(self.timezone)).astimezone(tz=x["stop_timezone_x"]),
+            axis=1,
+        )
+        dataframe_valid_dates["arr_time"] = dataframe_valid_dates.apply(
+            lambda x: x["arr_time"].replace(tzinfo=pytz.timezone(self.timezone)).astimezone(tz=x["stop_timezone_y"]),
+            axis=1,
+        )
         return dataframe_valid_dates
 
     def get_list_of_cities(self) -> pd.DataFrame:

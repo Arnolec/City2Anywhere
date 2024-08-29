@@ -41,10 +41,10 @@ class AnalyzerCalendarDates(Analyzer):
     # Retourne les StopPoints proche du point de départ
     def find_nearby_stops(self, lat: float, lon: float):  # Stop ID pour Global, parent_station pour SNCF
         return self.stops_id[
-            (self.stops_id["stop_lat"] > lat - DISTANCE_MARGIN/2)
-            & (self.stops_id["stop_lat"] < lat + DISTANCE_MARGIN/2)
-            & (self.stops_id["stop_lon"] > lon - DISTANCE_MARGIN/2)
-            & (self.stops_id["stop_lon"] < lon + DISTANCE_MARGIN/2)
+            (self.stops_id["stop_lat"] > lat - DISTANCE_MARGIN / 2)
+            & (self.stops_id["stop_lat"] < lat + DISTANCE_MARGIN / 2)
+            & (self.stops_id["stop_lon"] > lon - DISTANCE_MARGIN / 2)
+            & (self.stops_id["stop_lon"] < lon + DISTANCE_MARGIN / 2)
         ]
 
     def get_trips_nearby_location(self, lat: float, lon: float) -> pd.Series:
@@ -150,11 +150,15 @@ class AnalyzerCalendarDates(Analyzer):
             (trips_and_calendar_dates["date"] >= start_date) & (trips_and_calendar_dates["date"] <= end_date)
         ]
         trips = valid_trips
-        trips.loc[:,["dep_time"]] = trips["date"] + trips["departure_time_x"]
-        trips.loc[:,["arr_time"]] = trips["date"] + trips["departure_time_y"]
-        trips.loc[:,["dep_time"]] = trips.apply(lambda x: x["dep_time"].replace(tzinfo = pytz.timezone(self.timezone)), axis=1)
-        trips.loc[:,["arr_time"]] = trips.apply(lambda x: x["arr_time"].replace(tzinfo = pytz.timezone(self.timezone)), axis=1)
-        trips = trips.assign(stop_timezone_x = self.timezone, stop_timezone_y = self.timezone)
+        trips.loc[:, ["dep_time"]] = trips["date"] + trips["departure_time_x"]
+        trips.loc[:, ["arr_time"]] = trips["date"] + trips["departure_time_y"]
+        trips.loc[:, ["dep_time"]] = trips.apply(
+            lambda x: x["dep_time"].replace(tzinfo=pytz.timezone(self.timezone)), axis=1
+        )
+        trips.loc[:, ["arr_time"]] = trips.apply(
+            lambda x: x["arr_time"].replace(tzinfo=pytz.timezone(self.timezone)), axis=1
+        )
+        trips = trips.assign(stop_timezone_x=self.timezone, stop_timezone_y=self.timezone)
         return trips
 
     def get_list_of_cities(self) -> pd.DataFrame:

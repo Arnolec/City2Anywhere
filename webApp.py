@@ -6,6 +6,7 @@ import datetime
 import back_requests as br
 from streamlit_extras.no_default_selectbox import selectbox
 import pandas as pd
+import pytz
 
 st.set_page_config(layout="wide")
 
@@ -114,7 +115,10 @@ with col2:
             with col2_1:
                 st.write(trip.stop_name_x)
                 st.write("Heure de départ : ", datetime.datetime.strftime(trip.dep_time, format="%Hh%M"))
-                if trip.dep_time.utcoffset() != trip.arr_time.utcoffset():
+                if (
+                    trip.dep_time.utcoffset() != trip.arr_time.utcoffset()
+                    or trip.dep_time.utcoffset() != datetime.datetime.now(pytz.timezone("Europe/Paris")).utcoffset()
+                ):
                     st.write("Fuseau horaire : ", trip.stop_timezone_x)
             with col2_2:
                 duree = (trip.departure_time_y - trip.departure_time_x).total_seconds()
@@ -126,7 +130,10 @@ with col2:
             with col2_3:
                 st.write(trip.stop_name_y)
                 st.write("Heure d'arrivée : ", datetime.datetime.strftime(trip.arr_time, format="%Hh%M"))
-                if trip.dep_time.utcoffset() != trip.arr_time.utcoffset():
+                if (
+                    trip.dep_time.utcoffset() != trip.arr_time.utcoffset()
+                    or trip.dep_time.utcoffset() != datetime.datetime.now(pytz.timezone("Europe/Paris")).utcoffset()
+                ):
                     st.write("Fuseau horaire : ", trip.stop_timezone_y)
     if len(trips) > st.session_state.max_trips_printed:
         show_more = st.button(
