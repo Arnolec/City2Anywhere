@@ -3,6 +3,7 @@ from datetime import datetime
 import os
 import requests
 import zipfile
+import tempfile
 
 
 PERCENTAGE_NON_VALID_DATAS = 0.2
@@ -34,36 +35,25 @@ class DataUpdater:
         for transport in self.updatable_data:
             if not self.is_updatable_data(transport): continue 
             # Étape 1: Télécharger le fichier ZIP
-            url = self.dict_update_url[transport]  # Remplacez par l'URL réelle
+            url = self.dict_update_url[transport]
             response = requests.get(url)
             if response.status_code != 200:
                 print(f"Erreur lors du téléchargement du fichier ZIP pour {transport}")
-                return None
-
-            # Utiliser le répertoire courant (là où le script est exécuté)
+                continue
             script_dir = os.getcwd()
-
             # Créer un sous-répertoire 'temp' pour stocker le fichier ZIP temporairement
-            temp_dir = os.path.join(script_dir, "temp")
-            os.makedirs(temp_dir, exist_ok=True)
-
-            # Chemin pour enregistrer le fichier ZIP temporairement
-            zip_temp_path = os.path.join(temp_dir, "temp_file.zip")
-
-            # Étape 2: Enregistrer le fichier ZIP dans le dossier temp
-            with open(zip_temp_path, "wb") as temp_zip_file:
-                temp_zip_file.write(response.content)
-
-            # Étape 3: Décompression du fichier ZIP dans le dossier test_data
-            destination_directory = os.path.join(script_dir, "Data", transport)
-
-            # Créer le répertoire test_data s'il n'existe pas
-            os.makedirs(destination_directory, exist_ok=True)
-
-            # Ouvrir et extraire le contenu du ZIP, en écrasant les fichiers existants
-            with zipfile.ZipFile(zip_temp_path, "r") as zip_ref:
-                zip_ref.extractall(destination_directory)
-
-            # Suppression du fichier ZIP temporaire et du répertoire temp
-            os.remove(zip_temp_path)
-            os.rmdir(temp_dir)
+            with tempfile.TemporaryDirectory() as temp_dir:
+                # Chemin pour enregistrer le fichier ZIP temporairement
+                zip_temp_path = os.path.join(temp_dir, "temp_file.zip")
+                # Enregistrer le fichier ZIP dans le dossier temp
+                with open(zip_temp_path, "wb") as temp_zip_file:
+                    temp_zip_file.write(response.content)
+                # Décompression du fichier ZIP dans le dossier de destination
+                destination_directory = os.path.join(script_dir, "Data", transport)
+                # Créer le répertoire s'il n'existe pas
+                os.makedirs(destination_directory, exist_ok=True)
+                # Ouvrir et extraire le contenu du ZIP, en écrasant les fichiers existants
+                with zipfile.ZipFile(zip_temp_path, "r") as zip_ref:
+                    zip_ref.extractall(destination_directory)
+                # Suppression du fichier ZIP temporaire et du répertoire temp
+                os.remove(zip_temp_path)
