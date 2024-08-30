@@ -45,8 +45,8 @@ with st.container():
         with col_settings_1_2:
             transport_type = st.multiselect(
                 "Type de transport :",
-                ["TER", "TGV", "INTERCITE", "FLIXBUS"],
-                default=["TER", "TGV", "INTERCITE", "FLIXBUS"],
+                analyzers.keys(),
+                default=analyzers.keys(),
             )
     with col_settings_2:
         if len(date) == 2:

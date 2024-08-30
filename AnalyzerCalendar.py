@@ -73,6 +73,7 @@ class AnalyzerCalendar(Analyzer):
         services_within_period: pd.DataFrame = relevant_services[
             ((relevant_services["start_date"] >= start_date) & (relevant_services["start_date"] <= end_date))
             | ((relevant_services["end_date"] >= start_date) & (relevant_services["end_date"] <= end_date))
+            | ((relevant_services["start_date"] <= start_date) & (relevant_services["end_date"] >= end_date))
         ]
         if services_within_period.empty:
             return pd.Series()
@@ -180,6 +181,7 @@ class AnalyzerCalendar(Analyzer):
         services_within_period: pd.DataFrame = services[
             ((services["start_date"] >= start_date) & (services["start_date"] <= end_date))
             | ((services["end_date"] >= start_date) & (services["end_date"] <= end_date))
+            | ((services["start_date"] <= start_date) & (services["end_date"] >= end_date))
         ]
         if services_within_period.empty:
             return pd.DataFrame()

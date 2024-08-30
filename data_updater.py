@@ -15,9 +15,10 @@ class DataUpdater:
         "TGV": "https://eu.ftp.opendatasoft.com/sncf/gtfs/export_gtfs_voyages.zip",
         "INTERCITE": "https://eu.ftp.opendatasoft.com/sncf/gtfs/export-intercites-gtfs-last.zip",
         "FLIXBUS": "https://transport.data.gouv.fr/resources/11681/download",
+        "BLABLABUS": "https://bus-api.blablacar.com/gtfs.zip"
     }
 
-    def __init__(self, updatable_data: list[str] = ["FLIXBUS", "TER", "TGV", "INTERCITE"]):
+    def __init__(self, updatable_data: list[str] = ["FLIXBUS","BLABLABUS", "TER", "TGV", "INTERCITE"]):
         self.updatable_data = updatable_data
 
     def is_updatable_data(self, transport: str) -> bool:
@@ -26,6 +27,8 @@ class DataUpdater:
         if check_file:
             dates = pd.read_csv(os.path.join("Data", transport, "calendar.txt"))["end_date"]
         else:
+            if not os.path.isfile(os.path.join("Data", transport, "calendar_dates.txt")):
+                return True
             dates = pd.read_csv(os.path.join("Data", transport, "calendar_dates.txt"))["date"]
         valid_datas = dates[dates > int(datetime.now().strftime("%Y%m%d"))].count()
         percentage_valid_datas = (valid_datas / len(dates))
