@@ -58,5 +58,3 @@ class DataUpdater:
                 # Ouvrir et extraire le contenu du ZIP, en écrasant les fichiers existants
                 with zipfile.ZipFile(zip_temp_path, "r") as zip_ref:
                     zip_ref.extractall(destination_directory)
-                # Suppression du fichier ZIP temporaire et du répertoire temp
-                os.remove(zip_temp_path)

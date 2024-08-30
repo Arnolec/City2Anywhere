@@ -124,7 +124,7 @@ with col2:
                 duree = (trip.departure_time_y - trip.departure_time_x).total_seconds()
                 st.write(
                     "Durée : ",
-                    datetime.datetime.fromtimestamp(duree, tz=datetime.UTC).strftime("%Hh%M") + "",
+                    datetime.datetime.fromtimestamp(duree, tz=pytz.UTC).strftime("%Hh%M") + "",
                 )
                 st.write("Transport : ", trip.transport_type)
             with col2_3:
