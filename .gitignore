@@ -1,6 +1,6 @@
 __pycache__/
-Notebooks/
-Data/FLIXBUS/
-Data/INTERCITE/
-Data/TER/
-Data/TGV/
+Data/FLIXBUS
+Data/INTERCITE
+Data/TER
+Data/TGV
+Notebooks
