@@ -1,15 +1,13 @@
 import pytest
 import pandas as pd
-import sys
 from datetime import datetime
 
-sys.path.append("..")  # Adds higher directory to python modules path.
-from AnalyzerCalendar import AnalyzerCalendar as Ana
+import AnalyzerCalendar as Ana
 
 
 @pytest.fixture
 def analyzer() -> Ana:
-    return Ana("TEST/AnalyzerCalendar")
+    return Ana.AnalyzerCalendar("TEST/AnalyzerCalendar")
 
 
 # Testing of analyzer.find_nearby_stops
@@ -67,15 +65,6 @@ def test_trips_nearby_multiple_stops_multiple_trips_not_same_trips(analyzer) -> 
     assert "Strasbourg1_id" in analyzer.unique_departures["stop_id"].values
     assert "Strasbourg2_id" in analyzer.unique_departures["stop_id"].values
 
-
-def test_trips_nearby_multiple_stops_multiple_trips_same_trips(analyzer) -> None:
-    trips = analyzer.get_trips_nearby_location(15.0, 15.0)
-    assert "TRIP003" in trips.values
-    assert "TRIP004" in trips.values
-    assert trips.shape[0] == 2
-    assert analyzer.unique_departures.shape[0] == 2
-    assert "Strasbourg1_id" in analyzer.unique_departures["stop_id"].values
-    assert "Strasbourg2_id" in analyzer.unique_departures["stop_id"].values
 
 
 def test_trips_nearby_multiple_stops_multiple_trips_same_trips(analyzer) -> None:
@@ -194,6 +183,7 @@ def test_find_trips_two_same_stops_same_trip_multiple_dates(analyzer) -> None:
         8.0, 8.0, 9.0, 9.0, datetime(2024, 7, 1), datetime(2024, 8, 1), pd.Timedelta(hours=6)
     )
     assert destinations.shape[0] == 15
+    assert "TRIP005" in destinations["trip_id"].values
 
 
 def test_find_trips_one_trip_multiple_dates(analyzer) -> None:
@@ -201,13 +191,8 @@ def test_find_trips_one_trip_multiple_dates(analyzer) -> None:
         15.0, 15.0, 5.0, 5.0, datetime(2024, 7, 1), datetime(2024, 8, 1), pd.Timedelta(hours=6)
     )
     assert destinations.shape[0] == 4
-
-
-def test_find_trips_one_trip_multiple_dates(analyzer) -> None:
-    destinations = analyzer.find_trips_between_locations(
-        15.0, 15.0, 5.0, 5.0, datetime(2024, 7, 1), datetime(2024, 8, 1), pd.Timedelta(hours=6)
-    )
-    assert destinations.shape[0] == 4
+    assert "TRIP004" in destinations["trip_id"].values
+    assert "Europe/Paris" in destinations["stop_timezone_x"].values
 
 
 def test_find_trips_one_trip_multiple_dates2(analyzer) -> None:
@@ -215,6 +200,17 @@ def test_find_trips_one_trip_multiple_dates2(analyzer) -> None:
         15.0, 15.0, 4.0, 4.0, datetime(2024, 7, 4), datetime(2024, 8, 5), pd.Timedelta(hours=6)
     )
     assert destinations.shape[0] == 1
+    assert "TRIP003" in destinations["trip_id"].values
+    assert "Europe/Paris" in destinations["stop_timezone_x"].values
+
+def test_find_trips_dates_fully_in_period(analyzer) -> None:
+    destinations = analyzer.find_trips_between_locations(
+        15.0, 15.0, 5.0, 5.0, datetime(2024, 7, 6), datetime(2024, 7, 9), pd.Timedelta(hours=6)
+    )
+    assert destinations.shape[0] == 2
+    assert "TRIP004" in destinations["trip_id"].values
+    assert "Europe/Paris" in destinations["stop_timezone_x"].values
+
 
 
 # Testing of analyzer.get_list_of_cities

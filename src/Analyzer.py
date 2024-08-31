@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 import pandas as pd
 
-
 # Interface for the different analyzers
 class Analyzer(ABC):
     @abstractmethod

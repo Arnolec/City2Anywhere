@@ -1,17 +1,13 @@
 import pytest
 import pandas as pd
 from datetime import datetime
-import sys
-import pytz
-import numpy as np
 
-sys.path.append("..")  # Adds higher directory to python modules path.
-from AnalyzerSNCF import AnalyzerCalendarDates as Ana
+import AnalyzerSNCF as Ana
 
 
 @pytest.fixture
 def analyzer() -> Ana:
-    return Ana("TEST/AnalyzerSNCF")
+    return Ana.AnalyzerCalendarDates("TEST/AnalyzerSNCF")
 
 
 # Testing of analyzer.find_nearby_stops
