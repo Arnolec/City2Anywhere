@@ -56,4 +56,5 @@ jobs:
     
     - name: Run tests
       run: |
+        PYTHONPATH='.'
         pytest
