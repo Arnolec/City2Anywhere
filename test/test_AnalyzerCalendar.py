@@ -1,6 +1,7 @@
 import pytest
 import pandas as pd
 from datetime import datetime
+import numpy as np
 
 import src.analyzerCalendar as Ana
 
@@ -211,14 +212,24 @@ def test_find_trips_dates_fully_in_period(analyzer) -> None:
     assert "TRIP004" in destinations["trip_id"].values
     assert "Europe/Paris" in destinations["stop_timezone_x"].values
 
-
+def test_find_trips_dates_cancelled_trip(analyzer) -> None:
+    destinations = analyzer.find_trips_between_locations(
+        16.0, 16.0, 17.0, 17.0, datetime(2024, 7, 1), datetime(2024, 7, 8), pd.Timedelta(hours=6)
+    )
+    assert destinations.shape[0] == 4
+    assert "TRIP008" in destinations["trip_id"].values
+    assert np.datetime64(datetime(2024, 7, 2)) in destinations["date"].values
+    assert np.datetime64(datetime(2024, 7, 3)) in destinations["date"].values
+    assert np.datetime64(datetime(2024, 7, 4)) in destinations["date"].values
+    assert np.datetime64(datetime(2024, 7, 7)) in destinations["date"].values
+    assert not np.datetime64(datetime(2024, 7, 1)) in destinations["date"].values
 
 # Testing of analyzer.get_list_of_cities
 
 
 def test_list_of_cities(analyzer) -> None:
     cities = analyzer.get_list_of_cities()
-    assert cities.shape[0] == 17
+    assert cities.shape[0] == 19
     assert "Laval" in cities["stop_name"].values
     assert "Vannes" in cities["stop_name"].values
     assert "Strasbourg1" in cities["stop_name"].values

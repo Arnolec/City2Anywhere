@@ -58,7 +58,7 @@ with st.container():
                 analyzers,
                 cities,
             )
-        destination_selected = selectbox("Destinations :", destinations.index)
+        destination_selected = selectbox("Destinations :", destinations.index, default="-")
         col_settings_2_1, col_settings_2_2 = st.columns([0.5, 0.5], gap="small", vertical_alignment="top")
         with col_settings_2_1:
             departure_time = st.time_input("Heure de départ :", datetime.time(8, 0), step=datetime.timedelta(hours=1))
@@ -96,6 +96,9 @@ with col2:
         if not trips.equals(st.session_state.previous_trips):
             st.session_state.previous_trips = trips
             st.session_state.max_trips_printed = 10
+            
+        if len(trips) == 0:
+            st.write("Aucun trajet trouvé")
 
     st.session_state.trips_to_print = trips.iloc[: st.session_state.max_trips_printed]
     st.subheader("Trajets : ", destination_selected)

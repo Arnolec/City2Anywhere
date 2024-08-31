@@ -1,6 +1,6 @@
 import folium as fl
 import utils
-from Analyzer import Analyzer
+from analyzer import Analyzer
 import pandas as pd
 import streamlit as st
 import geopandas as gpd

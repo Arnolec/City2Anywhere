@@ -211,14 +211,22 @@ class AnalyzerCalendar(Analyzer):
             monday_index = df.columns.get_loc("monday")
             df = df[df.apply(lambda x: True if x.iloc[monday_index + x.date.weekday()] == 1 else False, axis=1)]
             dataframe_concat = pd.concat([dataframe_concat, df])
-        dataframe_valid_dates = pd.merge(trips, dataframe_concat, on="service_id")
-        dataframe_valid_dates["dep_time"] = dataframe_valid_dates["date"] + dataframe_valid_dates["departure_time_x"]
-        dataframe_valid_dates["arr_time"] = dataframe_valid_dates["date"] + dataframe_valid_dates["departure_time_y"]
-        dataframe_valid_dates["dep_time"] = dataframe_valid_dates.apply(
+        dataframe_valid_calendar = pd.merge(trips, dataframe_concat, on="service_id")
+        dataframe_valid_calendar = dataframe_valid_calendar.assign(idx = dataframe_valid_calendar.index)
+
+        trips_to_check_if_cancel = dataframe_valid_calendar[["trip_id", "date", "idx"]]
+        trips_to_check_if_cancel = pd.merge(trips_to_check_if_cancel, self.trips, on="trip_id")
+        trips_canceled = pd.merge(trips_to_check_if_cancel, self.calendar_dates, on=["service_id", "date"])
+        dataframe_valid_dates = dataframe_valid_calendar[
+            ~dataframe_valid_calendar["idx"].isin(trips_canceled["idx"])
+        ]
+        dataframe_valid_dates.loc[:,"dep_time"] = dataframe_valid_dates["date"] + dataframe_valid_dates["departure_time_x"]
+        dataframe_valid_dates.loc[:,"arr_time"] = dataframe_valid_dates["date"] + dataframe_valid_dates["departure_time_y"]
+        dataframe_valid_dates.loc[:,"dep_time"] = dataframe_valid_dates.apply(
             lambda x: x["dep_time"].replace(tzinfo=pytz.timezone(self.timezone)).astimezone(tz=x["stop_timezone_x"]),
             axis=1,
         )
-        dataframe_valid_dates["arr_time"] = dataframe_valid_dates.apply(
+        dataframe_valid_dates.loc[:,"arr_time"] = dataframe_valid_dates.apply(
             lambda x: x["arr_time"].replace(tzinfo=pytz.timezone(self.timezone)).astimezone(tz=x["stop_timezone_y"]),
             axis=1,
         )
