@@ -2,7 +2,7 @@ import pytest
 import pandas as pd
 from datetime import datetime
 
-import AnalyzerSNCF as Ana
+import src.AnalyzerSNCF as Ana
 
 
 @pytest.fixture
