@@ -1,7 +1,7 @@
 import os
-from Analyzer import Analyzer
-from AnalyzerSNCF import AnalyzerCalendarDates
-from AnalyzerCalendar import AnalyzerCalendar
+from analyzer import Analyzer
+from analyzerSNCF import AnalyzerCalendarDates
+from analyzerCalendar import AnalyzerCalendar
 
 
 def load_class_analyzer(path: str) -> Analyzer:

@@ -2,7 +2,7 @@ import pytest
 import pandas as pd
 from datetime import datetime
 
-import src.AnalyzerCalendar as Ana
+import src.analyzerCalendar as Ana
 
 
 @pytest.fixture

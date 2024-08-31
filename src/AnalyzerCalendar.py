@@ -2,7 +2,7 @@ import pandas as pd
 from datetime import datetime
 import os
 import numpy as np
-from Analyzer import Analyzer
+from analyzer import Analyzer
 import pytz
 
 DISTANCE_MARGIN: float = 0.05
