@@ -15,10 +15,10 @@ class DataUpdater:
         "TGV": "https://eu.ftp.opendatasoft.com/sncf/gtfs/export_gtfs_voyages.zip",
         "INTERCITE": "https://eu.ftp.opendatasoft.com/sncf/gtfs/export-intercites-gtfs-last.zip",
         "FLIXBUS": "https://transport.data.gouv.fr/resources/11681/download",
-        "BLABLABUS": "https://bus-api.blablacar.com/gtfs.zip"
+        "BLABLABUS": "https://bus-api.blablacar.com/gtfs.zip",
     }
 
-    def __init__(self, updatable_data: list[str] = ["FLIXBUS","BLABLABUS", "TER", "TGV", "INTERCITE"]):
+    def __init__(self, updatable_data: list[str] = ["FLIXBUS", "BLABLABUS", "TER", "TGV", "INTERCITE"]):
         self.updatable_data = updatable_data
 
     def is_updatable_data(self, transport: str) -> bool:
@@ -31,12 +31,13 @@ class DataUpdater:
                 return True
             dates = pd.read_csv(os.path.join("Data", transport, "calendar_dates.txt"))["date"]
         valid_datas = dates[dates > int(datetime.now().strftime("%Y%m%d"))].count()
-        percentage_valid_datas = (valid_datas / len(dates))
+        percentage_valid_datas = valid_datas / len(dates)
         return percentage_valid_datas < 1 - PERCENTAGE_NON_VALID_DATAS
 
     def update_data(self):
         for transport in self.updatable_data:
-            if not self.is_updatable_data(transport): continue 
+            if not self.is_updatable_data(transport):
+                continue
             # Étape 1: Télécharger le fichier ZIP
             url = self.dict_update_url[transport]
             response = requests.get(url)

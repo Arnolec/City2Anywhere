@@ -1,8 +1,0 @@
-numpy
-pandas
-folium
-streamlit
-streamlit_folium
-streamlit_extras
-geopandas
-pytz

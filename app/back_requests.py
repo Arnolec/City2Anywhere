@@ -5,9 +5,10 @@ import folium as fl
 import geopandas as gpd
 import pandas as pd
 import streamlit as st
-import utils
-from analyzer import Analyzer
-from data_updater import DataUpdater
+
+import app.utils as utils
+from app.analyzer import Analyzer
+from app.data_updater import DataUpdater
 
 
 @st.cache_data

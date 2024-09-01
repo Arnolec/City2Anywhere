@@ -3,7 +3,8 @@ from datetime import datetime
 
 import pandas as pd
 import pytz
-from analyzer import Analyzer
+
+from app.analyzer import Analyzer
 
 DISTANCE_MARGIN: float = 0.05
 
