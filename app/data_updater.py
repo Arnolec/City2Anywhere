@@ -16,9 +16,11 @@ class DataUpdater:
         "INTERCITE": "https://eu.ftp.opendatasoft.com/sncf/gtfs/export-intercites-gtfs-last.zip",
         "FLIXBUS": "https://transport.data.gouv.fr/resources/11681/download",
         "BLABLABUS": "https://bus-api.blablacar.com/gtfs.zip",
+        "THALYS" : "https://www.data.gouv.fr/fr/datasets/r/cf7adb62-bbfe-4f1f-93f7-dbbad9fd60e4",
+        "EUROSTAR": "https://www.data.gouv.fr/fr/datasets/r/9089b550-696e-4ae0-87b5-40ea55a14292"
     }
 
-    def __init__(self, updatable_data: list[str] = ["FLIXBUS", "BLABLABUS", "TER", "TGV", "INTERCITE"]):
+    def __init__(self, updatable_data: list[str] = ["FLIXBUS", "BLABLABUS", "TER", "TGV", "INTERCITE", "THALYS", "EUROSTAR"]):
         self.updatable_data = updatable_data
 
     def is_updatable_data(self, transport: str) -> bool:

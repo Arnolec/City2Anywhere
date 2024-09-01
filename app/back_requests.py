@@ -66,6 +66,8 @@ def load_analyzers() -> dict[str, Analyzer]:
     analyzers["INTERCITE"] = utils.load_class_analyzer("INTERCITE")
     analyzers["FLIXBUS"] = utils.load_class_analyzer("FLIXBUS")
     analyzers["BLABLABUS"] = utils.load_class_analyzer("BLABLABUS")
+    analyzers["THALYS"] = utils.load_class_analyzer("THALYS") # Ajouter Thalys et Eurostar
+    analyzers["EUROSTAR"] = utils.load_class_analyzer("EUROSTAR")
     return analyzers
 
 
@@ -177,7 +179,7 @@ def get_destinations(
 def generate_map_with_marker(lat: float, lon: float, destinations: dict[str, pd.DataFrame]) -> fl.FeatureGroup:
     fg = fl.FeatureGroup("Markers")
     fg.add_child(fl.Marker([lat, lon], popup="Ville de départ", icon=fl.Icon(color="blue")))
-    color = {"TER": "red", "TGV": "black", "INTERCITE": "gray", "FLIXBUS": "green", "BLABLABUS": "blue"}
+    color = {"TER": "red", "TGV": "black", "INTERCITE": "gray", "FLIXBUS": "green", "BLABLABUS": "blue", "THALYS": "orange", "EUROSTAR": "purple"}
     for key, destinations_analyzer in destinations.items():
         color_transport = color[key]
         for row in destinations_analyzer.itertuples():

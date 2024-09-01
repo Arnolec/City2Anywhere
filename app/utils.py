@@ -1,8 +1,10 @@
 import os
+import pandas as pd
 
 from app.analyzer import Analyzer
 from app.analyzerCalendar import AnalyzerCalendar
 from app.analyzerSNCF import AnalyzerCalendarDates
+from app.analyzerEuro import AnalyzerCalendarDates_not_parent
 
 
 def load_class_analyzer(path: str) -> Analyzer:
@@ -10,7 +12,10 @@ def load_class_analyzer(path: str) -> Analyzer:
     if check_file:
         return AnalyzerCalendar(path)
     else:
-        return AnalyzerCalendarDates(path)
+        if path not in ["TGV, TER, INTERCITE"]:
+            return AnalyzerCalendarDates_not_parent(path)
+        else:
+            return AnalyzerCalendarDates(path)
 
 
 def find_best_name(names):
