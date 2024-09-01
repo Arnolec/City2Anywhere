@@ -1,8 +1,9 @@
-import pytest
-import pandas as pd
 from datetime import datetime
 
-import src.analyzerSNCF as Ana
+import pandas as pd
+import pytest
+
+import app.analyzerSNCF as Ana
 
 
 @pytest.fixture

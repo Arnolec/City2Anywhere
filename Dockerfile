@@ -1,4 +1,4 @@
-FROM python:3.9-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 
@@ -10,7 +10,7 @@ WORKDIR /app
 #    && rm -rf /var/lib/apt/lists/*
 
 # Copier en local pour l'instant (Repo privé)
-COPY . .
+COPY app .
 
 RUN pip3 install -r requirements.txt
 

@@ -1,12 +1,12 @@
+from datetime import datetime, time
+from typing import Optional
+
 import folium as fl
-import utils
-from analyzer import Analyzer
+import geopandas as gpd
 import pandas as pd
 import streamlit as st
-import geopandas as gpd
-from typing import Optional
-from datetime import datetime
-from datetime import time
+import utils
+from analyzer import Analyzer
 from data_updater import DataUpdater
 
 

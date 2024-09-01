@@ -1,12 +1,13 @@
 # webApp.py
-import folium as fl
-from streamlit_folium import st_folium
-import streamlit as st
 import datetime
+
 import back_requests as br
-from streamlit_extras.no_default_selectbox import selectbox
+import folium as fl
 import pandas as pd
 import pytz
+import streamlit as st
+from streamlit_extras.no_default_selectbox import selectbox
+from streamlit_folium import st_folium
 
 st.set_page_config(layout="wide")
 
@@ -58,7 +59,7 @@ with st.container():
                 analyzers,
                 cities,
             )
-        destination_selected = selectbox("Destinations :", destinations.index, default="-")
+        destination_selected = selectbox("Destinations :", destinations.index, no_selection_label="-")
         col_settings_2_1, col_settings_2_2 = st.columns([0.5, 0.5], gap="small", vertical_alignment="top")
         with col_settings_2_1:
             departure_time = st.time_input("Heure de départ :", datetime.time(8, 0), step=datetime.timedelta(hours=1))
@@ -124,10 +125,12 @@ with col2:
                 ):
                     st.write("Fuseau horaire : ", trip.stop_timezone_x)
             with col2_2:
-                duree = (trip.departure_time_y - trip.departure_time_x).total_seconds()
+                duration = (trip.departure_time_y - trip.departure_time_x).total_seconds()
+                string_duration = datetime.datetime.fromtimestamp(duration, tz=pytz.UTC).strftime("%Hh%M")
+                days = f"{int(duration/86400)} jour " if int(duration/86400) > 0 else ""
                 st.write(
                     "Durée : ",
-                    datetime.datetime.fromtimestamp(duree, tz=pytz.UTC).strftime("%Hh%M") + "",
+                    days+string_duration + "",
                 )
                 st.write("Transport : ", trip.transport_type)
             with col2_3:

@@ -1,10 +1,10 @@
-import pandas as pd
-from datetime import datetime
 import os
-import requests
-import zipfile
 import tempfile
+import zipfile
+from datetime import datetime
 
+import pandas as pd
+import requests
 
 PERCENTAGE_NON_VALID_DATAS = 0.2
 
