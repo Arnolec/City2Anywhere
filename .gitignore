@@ -4,7 +4,8 @@ Data/INTERCITE
 Data/TER
 Data/TGV
 Data/BLABLABUS
-Data/THALYS
+Data/DB-LONG
+Data/DB-REGIONAL
 Data/EUROSTAR
 Notebooks
 Profiling

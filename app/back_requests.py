@@ -66,7 +66,8 @@ def load_analyzers() -> dict[str, Analyzer]:
     analyzers["INTERCITE"] = utils.load_class_analyzer("INTERCITE")
     analyzers["FLIXBUS"] = utils.load_class_analyzer("FLIXBUS")
     analyzers["BLABLABUS"] = utils.load_class_analyzer("BLABLABUS")
-    analyzers["THALYS"] = utils.load_class_analyzer("THALYS") # Ajouter Thalys et Eurostar
+    analyzers["DB-LONG"] = utils.load_class_analyzer("DB-LONG")
+    analyzers["DB-REGIONAL"] = utils.load_class_analyzer("DB-REGIONAL")
     analyzers["EUROSTAR"] = utils.load_class_analyzer("EUROSTAR")
     return analyzers
 
@@ -99,6 +100,8 @@ def get_trips_to_city(
         datetime_departure,
     )
 
+    # Drop les duplicates (SNCF et DB ont des doublons en communs, comment comparer deux datetime avec des timezones différentes ?)
+    trips = raw_trips.drop_duplicates(subset=["dep_time"], keep="first")
     trips = raw_trips.sort_values(by="dep_time", ascending=True)
     return trips
 
@@ -179,7 +182,7 @@ def get_destinations(
 def generate_map_with_marker(lat: float, lon: float, destinations: dict[str, pd.DataFrame]) -> fl.FeatureGroup:
     fg = fl.FeatureGroup("Markers")
     fg.add_child(fl.Marker([lat, lon], popup="Ville de départ", icon=fl.Icon(color="blue")))
-    color = {"TER": "red", "TGV": "black", "INTERCITE": "gray", "FLIXBUS": "green", "BLABLABUS": "blue", "THALYS": "orange", "EUROSTAR": "purple"}
+    color = {"TER": "red", "TGV": "black", "INTERCITE": "gray", "FLIXBUS": "green", "BLABLABUS": "blue", "DB-LONG": "orange", "EUROSTAR": "purple", "DB-REGIONAL": "pink"}
     for key, destinations_analyzer in destinations.items():
         color_transport = color[key]
         for row in destinations_analyzer.itertuples():
