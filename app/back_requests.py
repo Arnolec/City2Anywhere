@@ -5,6 +5,8 @@ import folium as fl
 import geopandas as gpd
 import pandas as pd
 import streamlit as st
+import numpy as np
+from scipy.spatial import cKDTree
 
 import app.utils as utils
 from app.analyzer import Analyzer
@@ -189,27 +191,35 @@ def get_destinations(
     date_max = periode[1]
     destinations_duplicates = {}
     df_concat = pd.DataFrame()
+    destinations_df : pd.DataFrame = pd.DataFrame()
+
+    destinations_df.index = cities.index
+    destinations_df["present"] = False
+    destinations_df["transport"] = None
 
     for key, analyzer in _analyzers.items():
         if key in transport_type:
-            destinations_duplicates[key] = analyzer.find_destinations_from_location(lat, lon, date_min, date_max, max_distance)
-            df_concat = pd.concat([df_concat, destinations_duplicates[key]])
-    # 
-    destinations = cities[cities.index.isin(df_concat["stop_name"])]
-    return destinations_duplicates, destinations
+            destinations_transport = analyzer.find_destinations_from_location(lat, lon, date_min, date_max, max_distance)
+            destinations_transport["transport_type"] = key
+            df_concat = pd.concat([df_concat, destinations_transport])
 
+    for city in cities.itertuples():
+        for stop_destinations in df_concat.itertuples():
+            if (utils.euclidean_distance(city.stop_lat, city.stop_lon, stop_destinations.stop_lat, stop_destinations.stop_lon) <= city.max_distance):
+                destinations_df.loc[city.Index, "present"] = True
+                destinations_df.loc[city.Index, "transport"] = stop_destinations.transport_type
+                break
+
+    cities_present = cities.merge(destinations_df, left_index=True, right_index=True)
+    cities_present = cities_present[cities_present["present"]]
+    return cities_present
 
 @st.cache_data
-def generate_map_with_marker(lat: float, lon: float, destinations: dict[str, pd.DataFrame]) -> fl.FeatureGroup:
+def generate_map_with_marker(lat: float, lon: float, destinations: pd.DataFrame) -> fl.FeatureGroup:
     fg = fl.FeatureGroup("Markers")
     fg.add_child(fl.Marker([lat, lon], popup="Ville de départ", icon=fl.Icon(color="white")))
     color = {"TER": "red", "TGV": "black", "INTERCITE": "gray", "FLIXBUS": "green", "BLABLABUS": "blue", "DB-LONG": "orange", "EUROSTAR": "purple", "DB-REGIONAL": "pink"}
-    for key, destinations_analyzer in destinations.items():
-        color_transport = color[key]
-        for row in destinations_analyzer.itertuples():
-            fg.add_child(
-                fl.Marker(
-                    [float(row.stop_lat), float(row.stop_lon)], popup=row.stop_name, icon=fl.Icon(color=color_transport)
-                )
-            )
+    for dest in destinations.itertuples():
+        fg.add_child(fl.Marker([dest.stop_lat, dest.stop_lon], popup=dest.Index, icon=fl.Icon(color=color[dest.transport])))
+
     return fg

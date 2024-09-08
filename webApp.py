@@ -52,7 +52,7 @@ with st.container():
             )
     with col_settings_2:
         if len(date) == 2:
-            destinations_mixed_transport, destinations = br.get_destinations(
+            destinations = br.get_destinations(
                 cities.loc[city_selected]["stop_lat"],
                 cities.loc[city_selected]["stop_lon"],
                 date,
@@ -61,7 +61,7 @@ with st.container():
                 cities,
                 cities.loc[city_selected]["max_distance"]
             )
-        destination_selected = selectbox("Destinations :", destinations.index, no_selection_label="-")
+        destination_selected = selectbox("Destinations :", destinations.index)
         col_settings_2_1, col_settings_2_2 = st.columns([0.5, 0.5], gap="small")
         with col_settings_2_1:
             departure_time = st.time_input("Heure de départ :", datetime.time(8, 0), step=datetime.timedelta(hours=1))
@@ -75,7 +75,7 @@ with col1:
             fg = br.generate_map_with_marker(
                 cities.loc[city_selected]["stop_lat"],
                 cities.loc[city_selected]["stop_lon"],
-                destinations_mixed_transport,
+                destinations,
             )
 
     m = fl.Map()
