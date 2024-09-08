@@ -1,6 +1,8 @@
 import os
 import pandas as pd
-
+import numpy as np
+from sklearn.cluster import DBSCAN
+from collections import Counter
 from app.analyzer import Analyzer
 from app.analyzerCalendar import AnalyzerCalendar
 from app.analyzerSNCF import AnalyzerCalendarDates
@@ -17,19 +19,47 @@ def load_class_analyzer(path: str) -> Analyzer:
         else:
             return AnalyzerCalendarDates(path)
 
+# Utilisation de DBSCAN avec distance Haversine pour regrouper les arrêts proches en "villes"
+def group_stops_by_city(dataframe: pd.DataFrame, eps_km=1.0, min_samples=1) -> pd.DataFrame:
+    # Convertir les coordonnées en radians
+    coords = np.radians(dataframe[['stop_lat', 'stop_lon']].values)
+    
+    # Appliquer DBSCAN avec distance haversine
+    db = DBSCAN(eps=eps_km / 6371.0, min_samples=min_samples, metric='haversine')
+    labels = db.fit_predict(coords)
+    
+    # Ajouter les labels (villes) au dataframe
+    dataframe['city_cluster'] = labels
+    return dataframe
 
-def find_best_name(names):
-    # Idée facile mais pas efficace, à remplacer : on garde le nom le plus court
-    return min(names, key=len)
+# Liste de mots à ignorer (mots de bruit)
+mots_bruit = {"de", "des", "le", "la", "les", "et", "du", "un", "une", "dans", "au", "aux", "avec", "pour"}
 
+# Fonction modifiée pour trouver le meilleur nom basé sur les mots fréquents
+def choosing_city_name(names, threshold=0.5):
+    # Séparer chaque nom en mots tout en ignorant les mots de bruit
+    word_list = []
+    for name in names:
+        words = name.lower().split()
+        word_without_noise = [word for word in words if word not in mots_bruit]
+        word_list.append(word_without_noise)
 
-def round_to_precision_003(value: float) -> float:
-    return round(value / 0.03) * 0.03
+    # Compter la fréquence d'apparition de chaque mot
+    counter = Counter(word for words in word_list for word in words)
 
+    # Calculer le nombre minimal d'apparitions pour qu'un mot soit considéré fréquent
+    name_count = len(names)
+    min_apparitions = int(name_count * threshold)
 
-def round_to_precision_005(value: float) -> float:
-    return round(value / 0.05) * 0.05
+    # Sélectionner les mots qui apparaissent au moins dans 'seuil' pourcentage des noms
+    frequent_words  = [mot for mot, freq in counter.items() if freq >= min_apparitions]
 
+    # Recomposer le meilleur nom avec les mots fréquents
+    best_name = ' '.join(frequent_words)
+    naming = best_name.capitalize()
+    if naming == ' ' or naming == '':
+        naming = names[0]
+    return naming
 
-def round_to_precision_007(value: float) -> float:
-    return round(value / 0.07) * 0.07
+def euclidean_distance(lat1, lon1, lat2, lon2):
+    return np.sqrt((lat1 - lat2) ** 2 + (lon1 - lon2) ** 2)

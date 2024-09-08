@@ -31,8 +31,8 @@ def update_data() -> None:
 
 
 @st.cache_data
-def fetch_cities(_analyzers: dict[str, Analyzer]) -> pd.DataFrame:
-    cities: pd.DataFrame = {}
+def fetch_list_of_stops(_analyzers: dict[str, Analyzer]) -> pd.DataFrame:
+    cities: pd.DataFrame = pd.DataFrame()
     cities_analyzers: list[pd.DataFrame] = []
     for analyzer in _analyzers.values():
         cities_analyzers.append(analyzer.get_list_of_cities())
@@ -46,6 +46,20 @@ def fetch_cities(_analyzers: dict[str, Analyzer]) -> pd.DataFrame:
     cities_sorted = cities_concat.sort_values(by="number_of_appearance", ascending=False)
     cities = cities_sorted.set_index("stop_name")
     cities = cities[~cities.index.duplicated(keep="first")]
+    return cities
+
+def fetch_cities(_analyzers: dict[str, Analyzer]) -> pd.DataFrame:
+    list_of_stops = fetch_list_of_stops(_analyzers)
+    list_of_stops = list_of_stops.assign(stop_name = list_of_stops.index)
+    df_with_clusters = utils.group_stops_by_city(list_of_stops, eps_km=8.0)  # Ajuste eps_km selon la densité des villes
+    cluster_grouped = df_with_clusters.groupby('city_cluster')
+    cities = pd.DataFrame()
+    cities['stop_lat'] = cluster_grouped['stop_lat'].mean()
+    cities['stop_lon'] = cluster_grouped['stop_lon'].mean()
+    cities_list_stops = cluster_grouped.apply(lambda x: x['stop_name'].tolist(), include_groups = False)
+    cities['max_distance'] = cluster_grouped.apply(lambda x: utils.euclidean_distance(x['stop_lat'], x['stop_lon'], cities.loc[x.name, 'stop_lat'], cities.loc[x.name, 'stop_lon']).max(), include_groups=False)
+    cities['stop_name'] = cities_list_stops.apply(utils.choosing_city_name)
+    cities = cities.set_index('stop_name')
     return cities
 
 
@@ -82,6 +96,7 @@ def get_trips_to_city(
     _analyzers: dict[str, Analyzer],
     transport_type: list[str],
     departure_time: time,
+    max_distance: float
 ) -> pd.DataFrame:
     date_min = periode[0]
     date_max = periode[1]
@@ -98,6 +113,7 @@ def get_trips_to_city(
         _analyzers,
         transport_type,
         datetime_departure,
+        max_distance
     )
 
     # Drop les duplicates (SNCF et DB ont des doublons en communs, comment comparer deux datetime avec des timezones différentes ?)
@@ -118,6 +134,7 @@ def get_raw_trips_to_city(
     _analyzers: dict[str, Analyzer],
     transport_type: list[str],
     departure_time: pd.Timedelta,
+    max_distance: float
 ) -> pd.DataFrame:
     df_concat = pd.DataFrame()
     for key, analyzer in _analyzers.items():
@@ -132,6 +149,7 @@ def get_raw_trips_to_city(
                 analyzer,
                 key,
                 departure_time,
+                max_distance
             )
             df_concat = pd.concat([df_concat, trips_transport])
     return df_concat
@@ -148,9 +166,10 @@ def fetch_trips_one_transport(
     _analyzer: Analyzer,
     transport: str,
     departure_time: pd.Timedelta,
+    max_distance: float
 ) -> pd.DataFrame:
     trips = _analyzer.find_trips_between_locations(
-        departure_lat, departure_lon, arrival_lat, arrival_lon, date_min, date_max, departure_time
+        departure_lat, departure_lon, arrival_lat, arrival_lon, date_min, date_max, departure_time, max_distance
     )
     trips["transport_type"] = transport
     return trips
@@ -164,6 +183,7 @@ def get_destinations(
     transport_type: tuple[str],
     _analyzers: dict[str, Analyzer],
     cities: pd.DataFrame,
+    max_distance: float,
 ) -> tuple[dict[str, pd.DataFrame], pd.DataFrame]:
     date_min = periode[0]
     date_max = periode[1]
@@ -172,8 +192,9 @@ def get_destinations(
 
     for key, analyzer in _analyzers.items():
         if key in transport_type:
-            destinations_duplicates[key] = analyzer.find_destinations_from_location(lat, lon, date_min, date_max)
+            destinations_duplicates[key] = analyzer.find_destinations_from_location(lat, lon, date_min, date_max, max_distance)
             df_concat = pd.concat([df_concat, destinations_duplicates[key]])
+    # 
     destinations = cities[cities.index.isin(df_concat["stop_name"])]
     return destinations_duplicates, destinations
 
@@ -181,7 +202,7 @@ def get_destinations(
 @st.cache_data
 def generate_map_with_marker(lat: float, lon: float, destinations: dict[str, pd.DataFrame]) -> fl.FeatureGroup:
     fg = fl.FeatureGroup("Markers")
-    fg.add_child(fl.Marker([lat, lon], popup="Ville de départ", icon=fl.Icon(color="blue")))
+    fg.add_child(fl.Marker([lat, lon], popup="Ville de départ", icon=fl.Icon(color="white")))
     color = {"TER": "red", "TGV": "black", "INTERCITE": "gray", "FLIXBUS": "green", "BLABLABUS": "blue", "DB-LONG": "orange", "EUROSTAR": "purple", "DB-REGIONAL": "pink"}
     for key, destinations_analyzer in destinations.items():
         color_transport = color[key]

@@ -31,9 +31,9 @@ def callback_increment(max_trips: int, dataframe_len) -> None:
 
 
 with st.container():
-    col_settings_1, col_settings_2 = st.columns([0.6, 0.4], gap="small", vertical_alignment="top")
+    col_settings_1, col_settings_2 = st.columns([0.6, 0.4], gap="small")
     with col_settings_1:
-        col_settings_1_1, col_settings_1_2 = st.columns([0.5, 0.5], gap="small", vertical_alignment="top")
+        col_settings_1_1, col_settings_1_2 = st.columns([0.5, 0.5], gap="small")
         with col_settings_1_1:
             city_selected = st.selectbox("Sélectionnez une ville :", cities.index)
             today = datetime.datetime.now()
@@ -59,13 +59,14 @@ with st.container():
                 transport_type,
                 analyzers,
                 cities,
+                cities.loc[city_selected]["max_distance"]
             )
         destination_selected = selectbox("Destinations :", destinations.index, no_selection_label="-")
-        col_settings_2_1, col_settings_2_2 = st.columns([0.5, 0.5], gap="small", vertical_alignment="top")
+        col_settings_2_1, col_settings_2_2 = st.columns([0.5, 0.5], gap="small")
         with col_settings_2_1:
             departure_time = st.time_input("Heure de départ :", datetime.time(8, 0), step=datetime.timedelta(hours=1))
 
-col1, col2 = st.columns([0.6, 0.4], gap="medium", vertical_alignment="top")
+col1, col2 = st.columns([0.6, 0.4], gap="medium")
 
 with col1:
     if (city_selected is not None) and (city_selected != previous_city):
@@ -94,6 +95,7 @@ with col2:
             analyzers,
             transport_type,
             departure_time,
+            cities.loc[city_selected]["max_distance"]
         )
         if not trips.equals(st.session_state.previous_trips):
             st.session_state.previous_trips = trips
@@ -116,7 +118,7 @@ with col2:
                 )
             else:
                 st.write("Trajet du ", datetime.datetime.strftime(trip.dep_time, format="%d-%m"))
-            col2_1, col2_2, col2_3 = st.columns([0.4, 0.2, 0.4], gap="small", vertical_alignment="top")
+            col2_1, col2_2, col2_3 = st.columns([0.4, 0.2, 0.4], gap="small")
             with col2_1:
                 st.write(trip.stop_name_x)
                 st.write("Heure de départ : ", datetime.datetime.strftime(trip.dep_time, format="%Hh%M"))
