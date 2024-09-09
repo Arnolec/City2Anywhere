@@ -189,29 +189,41 @@ def get_destinations(
 ) -> tuple[dict[str, pd.DataFrame], pd.DataFrame]:
     date_min = periode[0]
     date_max = periode[1]
-    destinations_duplicates = {}
     df_concat = pd.DataFrame()
-    destinations_df : pd.DataFrame = pd.DataFrame()
 
-    destinations_df.index = cities.index
-    destinations_df["present"] = False
-    destinations_df["transport"] = None
+    cities["present"] = False
+    cities["transport"] = None
 
     for key, analyzer in _analyzers.items():
         if key in transport_type:
             destinations_transport = analyzer.find_destinations_from_location(lat, lon, date_min, date_max, max_distance)
             destinations_transport["transport_type"] = key
             df_concat = pd.concat([df_concat, destinations_transport])
+    
+    # Convertir les colonnes utiles en arrays NumPy pour une meilleure performance
+    city_latitudes = cities["stop_lat"].values
+    city_longitudes = cities["stop_lon"].values
+    city_max_distances = cities["max_distance"].values
+    city_index = cities.index
+    stop_latitudes = df_concat["stop_lat"].values
+    stop_longitudes = df_concat["stop_lon"].values
+    stop_transport_types = df_concat["transport_type"].values
 
-    for city in cities.itertuples():
-        for stop_destinations in df_concat.itertuples():
-            if (utils.euclidean_distance(city.stop_lat, city.stop_lon, stop_destinations.stop_lat, stop_destinations.stop_lon) <= city.max_distance):
-                destinations_df.loc[city.Index, "present"] = True
-                destinations_df.loc[city.Index, "transport"] = stop_destinations.transport_type
-                break
+    # Parcourir les villes
+    for (city_idx, city_lat, city_lon, city_max_dist) in zip(city_index,city_latitudes, city_longitudes, city_max_distances):
+        # Calculer les distances euclidiennes pour toutes les destinations
+        distances = np.sqrt((city_lat - stop_latitudes)**2 + (city_lon - stop_longitudes)**2)
+        
+        # Trouver la première destination qui respecte la condition de distance
+        within_max_dist_idx = np.where(distances <= city_max_dist)[0]
+        
+        if len(within_max_dist_idx) > 0:
+            first_match_idx = within_max_dist_idx[0]
+            # Effectuer les modifications dans destinations_df en une seule fois
+            cities.at[city_idx, "present"] = True
+            cities.at[city_idx, "transport"] = stop_transport_types[first_match_idx]
 
-    cities_present = cities.merge(destinations_df, left_index=True, right_index=True)
-    cities_present = cities_present[cities_present["present"]]
+    cities_present = cities[cities["present"]]
     return cities_present
 
 @st.cache_data
