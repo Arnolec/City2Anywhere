@@ -1,9 +1,9 @@
 import os
 from datetime import datetime
 
+import numpy as np
 import pandas as pd
 import pytz
-import numpy as np
 
 from app.analyzer import Analyzer
 

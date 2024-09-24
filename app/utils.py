@@ -1,12 +1,14 @@
 import os
-import pandas as pd
-import numpy as np
-from sklearn.cluster import DBSCAN
 from collections import Counter
+
+import numpy as np
+import pandas as pd
+from sklearn.cluster import DBSCAN
+
 from app.analyzer import Analyzer
 from app.analyzerCalendar import AnalyzerCalendar
-from app.analyzerSNCF import AnalyzerCalendarDatesSNCF
 from app.analyzerCalendarDates import AnalyzerCalendarDates
+from app.analyzerSNCF import AnalyzerCalendarDatesSNCF
 
 
 def load_class_analyzer(path: str) -> Analyzer:

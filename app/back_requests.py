@@ -3,9 +3,9 @@ from typing import Optional
 
 import folium as fl
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 import streamlit as st
-import numpy as np
 
 import app.utils as utils
 from app.analyzer import Analyzer

@@ -29,13 +29,19 @@ jobs:
         source venv/bin/activate
         pip install black ruff
 
-    # Étape 4: Exécuter Black (vérification de formatage)
+    # Étape 4: Exécuter isort
+    - name: Run isort
+      run: |
+        source venv/bin/activate
+        isort . --profile=black --check-only
+
+    # Étape 5: Exécuter Black (vérification de formatage)
     - name: Run Black (check)
       run: |
         source venv/bin/activate
-        black --check .
+        black --check --line-length=120 .
 
-    # Étape 5: Exécuter Ruff (analyse statique)
+    # Étape 6: Exécuter Ruff (analyse statique)
     - name: Run Ruff
       run: |
         source venv/bin/activate
