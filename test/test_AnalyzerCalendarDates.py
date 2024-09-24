@@ -1,14 +1,15 @@
 from datetime import datetime
 
+import numpy as np
 import pandas as pd
 import pytest
 
-import app.analyzerSNCF as Ana
+import app.analyzerCalendarDates as Ana
 
 
 @pytest.fixture
 def analyzer() -> Ana:
-    return Ana.AnalyzerCalendarDatesSNCF("TEST/AnalyzerSNCF")
+    return Ana.AnalyzerCalendarDates("TEST/AnalyzerCalendarDates")
 
 
 # Testing of analyzer.find_nearby_stops
@@ -143,10 +144,10 @@ def test_find_destinations_one_single_trip_multiple_destinations(analyzer) -> No
 def test_find_destinations_same_city_in_one_trip(analyzer) -> None:
     destinations = analyzer.find_destinations_from_location(45.000, 5.000, datetime(2024, 7, 1), datetime(2024, 8, 1), 0.5)
     assert destinations.shape[0] == 3
-    assert "Laval" in destinations["stop_id"].values
-    assert "Vannes" in destinations["stop_id"].values
-    assert "Strasbourg" in destinations["stop_id"].values
-    assert "Paris2" not in destinations["stop_id"].values
+    assert "Laval001" in destinations["stop_id"].values
+    assert "Vannes001" in destinations["stop_id"].values
+    assert "Strasbourg001" in destinations["stop_id"].values
+    assert "Paris2001" not in destinations["stop_id"].values
 
 
 # Testing of analyzer.find_trips_between_locations

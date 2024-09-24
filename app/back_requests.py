@@ -6,7 +6,6 @@ import geopandas as gpd
 import pandas as pd
 import streamlit as st
 import numpy as np
-from scipy.spatial import cKDTree
 
 import app.utils as utils
 from app.analyzer import Analyzer
@@ -33,7 +32,7 @@ def update_data() -> None:
 
 
 @st.cache_data
-def fetch_list_of_stops(_analyzers: dict[str, Analyzer]) -> pd.DataFrame:
+def get_list_of_stops(_analyzers: dict[str, Analyzer]) -> pd.DataFrame:
     cities: pd.DataFrame = pd.DataFrame()
     cities_analyzers: list[pd.DataFrame] = []
     for analyzer in _analyzers.values():
@@ -50,8 +49,8 @@ def fetch_list_of_stops(_analyzers: dict[str, Analyzer]) -> pd.DataFrame:
     cities = cities[~cities.index.duplicated(keep="first")]
     return cities
 
-def fetch_cities(_analyzers: dict[str, Analyzer]) -> pd.DataFrame:
-    list_of_stops = fetch_list_of_stops(_analyzers)
+def get_cities(_analyzers: dict[str, Analyzer]) -> pd.DataFrame:
+    list_of_stops = get_list_of_stops(_analyzers)
     list_of_stops = list_of_stops.assign(stop_name = list_of_stops.index)
     df_with_clusters = utils.group_stops_by_city(list_of_stops, eps_km=8.0)  # Ajuste eps_km selon la densité des villes
     cluster_grouped = df_with_clusters.groupby('city_cluster')
@@ -66,7 +65,7 @@ def fetch_cities(_analyzers: dict[str, Analyzer]) -> pd.DataFrame:
 
 
 @st.cache_data
-def fetch_center(cities: pd.DataFrame) -> tuple[float, float]:
+def get_center(cities: pd.DataFrame) -> tuple[float, float]:
     gdf: gpd.GeoDataFrame = gpd.GeoDataFrame(
         cities, geometry=gpd.points_from_xy(cities.stop_lat, cities.stop_lon), crs="EPSG:4326"
     )
@@ -85,6 +84,9 @@ def load_analyzers() -> dict[str, Analyzer]:
     analyzers["DB-LONG"] = utils.load_class_analyzer("DB-LONG")
     analyzers["DB-REGIONAL"] = utils.load_class_analyzer("DB-REGIONAL")
     analyzers["EUROSTAR"] = utils.load_class_analyzer("EUROSTAR")
+    for key, analyzer in analyzers.items():
+        print(key)
+        print(type(analyzer))
     return analyzers
 
 
@@ -209,19 +211,21 @@ def get_destinations(
     stop_longitudes = df_concat["stop_lon"].values
     stop_transport_types = df_concat["transport_type"].values
 
-    # Parcourir les villes
-    for (city_idx, city_lat, city_lon, city_max_dist) in zip(city_index,city_latitudes, city_longitudes, city_max_distances):
-        # Calculer les distances euclidiennes pour toutes les destinations
-        distances = np.sqrt((city_lat - stop_latitudes)**2 + (city_lon - stop_longitudes)**2)
-        
-        # Trouver la première destination qui respecte la condition de distance
-        within_max_dist_idx = np.where(distances <= city_max_dist)[0]
-        
-        if len(within_max_dist_idx) > 0:
-            first_match_idx = within_max_dist_idx[0]
-            # Effectuer les modifications dans destinations_df en une seule fois
-            cities.at[city_idx, "present"] = True
-            cities.at[city_idx, "transport"] = stop_transport_types[first_match_idx]
+    # Calculer les distances euclidiennes pour toutes les combinaisons de villes et destinations
+    distances = np.sqrt((city_latitudes[:, np.newaxis] - stop_latitudes)**2 + (city_longitudes[:, np.newaxis] - stop_longitudes)**2)
+
+    # Trouver les indices des destinations qui respectent la condition de distance
+    within_max_dist = distances <= city_max_distances[:, np.newaxis]
+
+    # Trouver le premier indice qui respecte la condition pour chaque ville
+    first_match_idx = np.argmax(within_max_dist, axis=1)
+
+    # Vérifier si une destination a été trouvée pour chaque ville
+    found_match = np.any(within_max_dist, axis=1)
+
+    # Mettre à jour le DataFrame cities
+    cities.loc[found_match, "present"] = True
+    cities.loc[found_match, "transport"] = np.array(stop_transport_types)[first_match_idx[found_match]]
 
     cities_present = cities[cities["present"]]
     return cities_present

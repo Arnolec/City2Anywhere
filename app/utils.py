@@ -5,8 +5,8 @@ from sklearn.cluster import DBSCAN
 from collections import Counter
 from app.analyzer import Analyzer
 from app.analyzerCalendar import AnalyzerCalendar
-from app.analyzerSNCF import AnalyzerCalendarDates
-from app.analyzerEuro import AnalyzerCalendarDates_not_parent
+from app.analyzerSNCF import AnalyzerCalendarDatesSNCF
+from app.analyzerCalendarDates import AnalyzerCalendarDates
 
 
 def load_class_analyzer(path: str) -> Analyzer:
@@ -14,10 +14,10 @@ def load_class_analyzer(path: str) -> Analyzer:
     if check_file:
         return AnalyzerCalendar(path)
     else:
-        if path not in ["TGV, TER, INTERCITE"]:
-            return AnalyzerCalendarDates_not_parent(path)
-        else:
+        if path not in ["TGV", "TER", "INTERCITE"]:
             return AnalyzerCalendarDates(path)
+        else:
+            return AnalyzerCalendarDatesSNCF(path)
 
 # Utilisation de DBSCAN avec distance Haversine pour regrouper les arrêts proches en "villes"
 def group_stops_by_city(dataframe: pd.DataFrame, eps_km=1.0, min_samples=1) -> pd.DataFrame:

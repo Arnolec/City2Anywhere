@@ -10,7 +10,7 @@ from app.analyzer import Analyzer
 DISTANCE_MARGIN: float = 0.05
 
 
-class AnalyzerCalendarDates(Analyzer):
+class AnalyzerCalendarDatesSNCF(Analyzer):
     unique_departures: pd.DataFrame = pd.DataFrame()
     city_list: pd.DataFrame = pd.DataFrame()
     stops: pd.DataFrame = pd.DataFrame()
