@@ -18,10 +18,22 @@ class DataUpdater:
         "BLABLABUS": "https://bus-api.blablacar.com/gtfs.zip",
         "DB-LONG": "https://download.gtfs.de/germany/fv_free/latest.zip",
         "DB-REGIONAL": "https://download.gtfs.de/germany/rv_free/latest.zip",
-        "EUROSTAR": "https://www.data.gouv.fr/fr/datasets/r/9089b550-696e-4ae0-87b5-40ea55a14292"
+        "EUROSTAR": "https://www.data.gouv.fr/fr/datasets/r/9089b550-696e-4ae0-87b5-40ea55a14292",
     }
 
-    def __init__(self, updatable_data: list[str] = ["FLIXBUS", "BLABLABUS", "TER", "TGV", "INTERCITE", "DB-LONG", "DB-REGIONAL", "EUROSTAR"]):
+    def __init__(
+        self,
+        updatable_data: list[str] = [
+            "FLIXBUS",
+            "BLABLABUS",
+            "TER",
+            "TGV",
+            "INTERCITE",
+            "DB-LONG",
+            "DB-REGIONAL",
+            "EUROSTAR",
+        ],
+    ):
         self.updatable_data = updatable_data
 
     def is_updatable_data(self, transport: str) -> bool:

@@ -9,3 +9,4 @@ Data/DB-REGIONAL
 Data/EUROSTAR
 Notebooks
 Profiling
+.pre-commit-config.yaml

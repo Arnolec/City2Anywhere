@@ -68,7 +68,6 @@ def test_trips_nearby_multiple_stops_multiple_trips_not_same_trips(analyzer) -> 
     assert "Strasbourg2_id" in analyzer.unique_departures["stop_id"].values
 
 
-
 def test_trips_nearby_multiple_stops_multiple_trips_same_trips(analyzer) -> None:
     trips = analyzer.get_trips_nearby_location(8.0, 8.0, 0.5)
     assert "TRIP005" in trips.values
@@ -205,6 +204,7 @@ def test_find_trips_one_trip_multiple_dates2(analyzer) -> None:
     assert "TRIP003" in destinations["trip_id"].values
     assert "Europe/Paris" in destinations["stop_timezone_x"].values
 
+
 def test_find_trips_dates_fully_in_period(analyzer) -> None:
     destinations = analyzer.find_trips_between_locations(
         15.0, 15.0, 5.0, 5.0, datetime(2024, 7, 6), datetime(2024, 7, 9), pd.Timedelta(hours=6), 0.5
@@ -212,6 +212,7 @@ def test_find_trips_dates_fully_in_period(analyzer) -> None:
     assert destinations.shape[0] == 2
     assert "TRIP004" in destinations["trip_id"].values
     assert "Europe/Paris" in destinations["stop_timezone_x"].values
+
 
 def test_find_trips_dates_cancelled_trip(analyzer) -> None:
     destinations = analyzer.find_trips_between_locations(
@@ -223,7 +224,8 @@ def test_find_trips_dates_cancelled_trip(analyzer) -> None:
     assert np.datetime64(datetime(2024, 7, 3)) in destinations["date"].values
     assert np.datetime64(datetime(2024, 7, 4)) in destinations["date"].values
     assert np.datetime64(datetime(2024, 7, 7)) in destinations["date"].values
-    assert not np.datetime64(datetime(2024, 7, 1)) in destinations["date"].values
+    assert np.datetime64(datetime(2024, 7, 1)) not in destinations["date"].values
+
 
 # Testing of analyzer.get_list_of_cities
 

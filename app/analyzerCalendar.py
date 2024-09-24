@@ -50,10 +50,12 @@ class AnalyzerCalendar(Analyzer):
 
     # All stops near the location, Step 1 of find_destinations_from_location
     def find_nearby_stops(self, lat: float, lon: float, max_distance: float) -> pd.DataFrame:
-        return self.stops[np.sqrt((self.stops["stop_lat"] - lat) ** 2 + (self.stops["stop_lon"] - lon) ** 2) < 1.05*max_distance]
+        return self.stops[
+            np.sqrt((self.stops["stop_lat"] - lat) ** 2 + (self.stops["stop_lon"] - lon) ** 2) < 1.05 * max_distance
+        ]
 
     # All trips that fits location, Step 2 of find_destinations_from_location
-    def get_trips_nearby_location(self, lat: float, lon: float, max_distance : float) -> pd.Series:
+    def get_trips_nearby_location(self, lat: float, lon: float, max_distance: float) -> pd.Series:
         self.nearby_stops: pd.DataFrame = self.find_nearby_stops(lat, lon, max_distance)
         relevant_trips: pd.DataFrame = self.stop_times[self.stop_times["stop_id"].isin(self.nearby_stops["stop_id"])]
         self.unique_departures = relevant_trips.drop_duplicates(subset="trip_id")
@@ -61,7 +63,9 @@ class AnalyzerCalendar(Analyzer):
         return trip_ids
 
     # All trips that fits calendar, Step 3 of find_destinations_from_location
-    def filter_trips_within_period(self, lat: float, lon: float, start_date: datetime, end_date: datetime, max_distance) -> pd.Series:
+    def filter_trips_within_period(
+        self, lat: float, lon: float, start_date: datetime, end_date: datetime, max_distance
+    ) -> pd.Series:
         start_date = pd.to_datetime(start_date)
         end_date = pd.to_datetime(end_date)
         trip_ids: pd.Series = self.get_trips_nearby_location(lat, lon, max_distance)
@@ -142,7 +146,7 @@ class AnalyzerCalendar(Analyzer):
         start_date: datetime,
         end_date: datetime,
         departure_time: pd.Timedelta,
-        max_distance: float
+        max_distance: float,
     ) -> pd.DataFrame:
         departure_stops: pd.DataFrame = self.find_nearby_stops(departure_lat, departure_lon, max_distance)
         arrival_stops: pd.DataFrame = self.find_nearby_stops(arrival_lat, arrival_lon, max_distance)

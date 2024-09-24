@@ -42,10 +42,15 @@ class AnalyzerCalendarDatesSNCF(Analyzer):
         self.stops_area = self.stops[self.stops["parent_station"].isna()]
 
     # Retourne les StopPoints proche du point de départ
-    def find_nearby_stops(self, lat: float, lon: float, max_distance : float):  # Stop ID pour Global, parent_station pour SNCF
-        return self.stops_id[np.sqrt((self.stops_id["stop_lat"] - lat) ** 2 + (self.stops_id["stop_lon"] - lon) ** 2) < 1.05*max_distance]
-    
-    def get_trips_nearby_location(self, lat: float, lon: float, max_distance : float) -> pd.Series:
+    def find_nearby_stops(
+        self, lat: float, lon: float, max_distance: float
+    ):  # Stop ID pour Global, parent_station pour SNCF
+        return self.stops_id[
+            np.sqrt((self.stops_id["stop_lat"] - lat) ** 2 + (self.stops_id["stop_lon"] - lon) ** 2)
+            < 1.05 * max_distance
+        ]
+
+    def get_trips_nearby_location(self, lat: float, lon: float, max_distance: float) -> pd.Series:
         self.nearby_stops: pd.DataFrame = self.find_nearby_stops(lat, lon, max_distance)
         trips_containing_departure: pd.DataFrame = self.stop_times[
             self.stop_times["stop_id"].isin(self.nearby_stops["stop_id"])
@@ -54,7 +59,9 @@ class AnalyzerCalendarDatesSNCF(Analyzer):
         trip_ids: pd.Series = self.unique_departures["trip_id"]
         return trip_ids
 
-    def filter_trips_within_period(self, lat: float, lon: float, start_date: datetime, end_date: datetime, max_distance : float) -> pd.Series:
+    def filter_trips_within_period(
+        self, lat: float, lon: float, start_date: datetime, end_date: datetime, max_distance: float
+    ) -> pd.Series:
         start_date = pd.to_datetime(start_date)
         end_date = pd.to_datetime(end_date)
         trip_ids: pd.Series = self.get_trips_nearby_location(lat, lon, max_distance)
@@ -72,9 +79,11 @@ class AnalyzerCalendarDatesSNCF(Analyzer):
         return trips_within_period["trip_id"]
 
     def find_destinations_from_location(
-        self, lat: float, lon: float, start_date: datetime, end_date: datetime, max_distance : float
+        self, lat: float, lon: float, start_date: datetime, end_date: datetime, max_distance: float
     ) -> pd.DataFrame:
-        trip_ids_within_period: pd.Series = self.filter_trips_within_period(lat, lon, start_date, end_date , max_distance)
+        trip_ids_within_period: pd.Series = self.filter_trips_within_period(
+            lat, lon, start_date, end_date, max_distance
+        )
         stop_times_right_stops: pd.DataFrame = self.stop_times[self.stop_times["trip_id"].isin(trip_ids_within_period)]
         cities_after_inital_departure: pd.DataFrame = stop_times_right_stops.assign(
             city_departure_time="", stop_id_ville=""
@@ -114,7 +123,7 @@ class AnalyzerCalendarDatesSNCF(Analyzer):
         start_date: datetime,
         end_date: datetime,
         departure_time: pd.Timedelta,
-        max_distance: float
+        max_distance: float,
     ) -> pd.DataFrame:
         start_date = pd.to_datetime(start_date)
         end_date = pd.to_datetime(end_date)

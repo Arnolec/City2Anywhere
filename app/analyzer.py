@@ -16,7 +16,7 @@ class Analyzer(ABC):
         start_date: datetime,
         end_date: datetime,
         departure_time: pd.Timedelta,
-        max_distance: float
+        max_distance: float,
     ) -> pd.DataFrame:
         pass
 

@@ -18,11 +18,11 @@ cities = br.get_cities(analyzers)
 centroid_cities = br.get_center(cities)
 zoom_map, fg, previous_city, destinations, destination_selected, trips, trips_to_print = br.initialize_variables()
 
-if not "previous_trips" in st.session_state:
+if "previous_trips" not in st.session_state:
     st.session_state.previous_trips = pd.DataFrame()
-if not "max_trips_printed" in st.session_state:
+if "max_trips_printed" not in st.session_state:
     st.session_state.max_trips_printed = 10
-if not "trips_to_print" in st.session_state:
+if "trips_to_print" not in st.session_state:
     st.session_state.trips_to_print = pd.DataFrame()
 
 
@@ -59,7 +59,7 @@ with st.container():
                 transport_type,
                 analyzers,
                 cities,
-                cities.loc[city_selected]["max_distance"]
+                cities.loc[city_selected]["max_distance"],
             )
         destination_selected = selectbox("Destinations :", destinations.index)
         col_settings_2_1, col_settings_2_2 = st.columns([0.5, 0.5], gap="small")
@@ -95,12 +95,12 @@ with col2:
             analyzers,
             transport_type,
             departure_time,
-            cities.loc[city_selected]["max_distance"]
+            cities.loc[city_selected]["max_distance"],
         )
         if not trips.equals(st.session_state.previous_trips):
             st.session_state.previous_trips = trips
             st.session_state.max_trips_printed = 10
-            
+
         if len(trips) == 0:
             st.write("Aucun trajet trouvé")
 
@@ -131,10 +131,10 @@ with col2:
                 with col2_2:
                     duration = (trip.departure_time_y - trip.departure_time_x).total_seconds()
                     string_duration = datetime.datetime.fromtimestamp(duration, tz=pytz.UTC).strftime("%Hh%M")
-                    days = f"{int(duration/86400)} jour " if int(duration/86400) > 0 else ""
+                    days = f"{int(duration/86400)} jour " if int(duration / 86400) > 0 else ""
                     st.write(
                         "Durée : ",
-                        days+string_duration + "",
+                        days + string_duration + "",
                     )
                     st.write("Transport : ", trip.transport_type)
                 with col2_3:

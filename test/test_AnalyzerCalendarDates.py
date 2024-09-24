@@ -1,6 +1,5 @@
 from datetime import datetime
 
-import numpy as np
 import pandas as pd
 import pytest
 
@@ -135,14 +134,18 @@ def test_find_destinations_one_single_trip(analyzer) -> None:
 
 
 def test_find_destinations_one_single_trip_multiple_destinations(analyzer) -> None:
-    destinations = analyzer.find_destinations_from_location(40.0, 0.0, datetime(2024, 8, 10), datetime(2024, 8, 20), 0.5)
+    destinations = analyzer.find_destinations_from_location(
+        40.0, 0.0, datetime(2024, 8, 10), datetime(2024, 8, 20), 0.5
+    )
     assert destinations.shape[0] == 2
     assert "Laval" in destinations["stop_name"].values
     assert "Strasbourg" in destinations["stop_name"].values
 
 
 def test_find_destinations_same_city_in_one_trip(analyzer) -> None:
-    destinations = analyzer.find_destinations_from_location(45.000, 5.000, datetime(2024, 7, 1), datetime(2024, 8, 1), 0.5)
+    destinations = analyzer.find_destinations_from_location(
+        45.000, 5.000, datetime(2024, 7, 1), datetime(2024, 8, 1), 0.5
+    )
     assert destinations.shape[0] == 3
     assert "Laval001" in destinations["stop_id"].values
     assert "Vannes001" in destinations["stop_id"].values

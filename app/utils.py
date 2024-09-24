@@ -19,21 +19,24 @@ def load_class_analyzer(path: str) -> Analyzer:
         else:
             return AnalyzerCalendarDatesSNCF(path)
 
+
 # Utilisation de DBSCAN avec distance Haversine pour regrouper les arrêts proches en "villes"
 def group_stops_by_city(dataframe: pd.DataFrame, eps_km=1.0, min_samples=1) -> pd.DataFrame:
     # Convertir les coordonnées en radians
-    coords = np.radians(dataframe[['stop_lat', 'stop_lon']].values)
-    
+    coords = np.radians(dataframe[["stop_lat", "stop_lon"]].values)
+
     # Appliquer DBSCAN avec distance haversine
-    db = DBSCAN(eps=eps_km / 6371.0, min_samples=min_samples, metric='haversine')
+    db = DBSCAN(eps=eps_km / 6371.0, min_samples=min_samples, metric="haversine")
     labels = db.fit_predict(coords)
-    
+
     # Ajouter les labels (villes) au dataframe
-    dataframe['city_cluster'] = labels
+    dataframe["city_cluster"] = labels
     return dataframe
+
 
 # Liste de mots à ignorer (mots de bruit)
 mots_bruit = {"de", "des", "le", "la", "les", "et", "du", "un", "une", "dans", "au", "aux", "avec", "pour"}
+
 
 # Fonction modifiée pour trouver le meilleur nom basé sur les mots fréquents
 def choosing_city_name(names, threshold=0.5):
@@ -52,14 +55,15 @@ def choosing_city_name(names, threshold=0.5):
     min_apparitions = int(name_count * threshold)
 
     # Sélectionner les mots qui apparaissent au moins dans 'seuil' pourcentage des noms
-    frequent_words  = [mot for mot, freq in counter.items() if freq >= min_apparitions]
+    frequent_words = [mot for mot, freq in counter.items() if freq >= min_apparitions]
 
     # Recomposer le meilleur nom avec les mots fréquents
-    best_name = ' '.join(frequent_words)
+    best_name = " ".join(frequent_words)
     naming = best_name.capitalize()
-    if naming == ' ' or naming == '':
+    if naming == " " or naming == "":
         naming = names[0]
     return naming
+
 
 def euclidean_distance(lat1, lon1, lat2, lon2):
     return np.sqrt((lat1 - lat2) ** 2 + (lon1 - lon2) ** 2)
