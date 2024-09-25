@@ -25,27 +25,19 @@ jobs:
     # Étape 3: Installer les dépendances (Black et Ruff)
     - name: Install dependencies
       run: |
-        python -m venv venv
-        source venv/bin/activate
-        pip install black ruff isort
+        pip install black ruff
 
-    # Étape 4: Exécuter isort
-    - name: Run isort
-      run: |
-        source venv/bin/activate
-        isort . --profile=black --check-only
 
     # Étape 5: Exécuter Black (vérification de formatage)
     - name: Run Black (check)
       run: |
-        source venv/bin/activate
         black --check --line-length=120 .
 
     # Étape 6: Exécuter Ruff (analyse statique)
     - name: Run Ruff
       run: |
-        source venv/bin/activate
         ruff check .
+        ruff format .
 
   test:
     # Le job s'exécute sur une machine virtuelle Ubuntu
@@ -89,8 +81,8 @@ jobs:
     - name: Log in to Docker Hub
       uses: docker/login-action@v3
       with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_TOKEN }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.TOKEN }}
 
     # Build the Docker image
     - name: Build and push Docker image
@@ -98,4 +90,4 @@ jobs:
       with:
         context: .
         push: true
-        tags: ${{ secrets.DOCKER_USERNAME }}/appli-transport:latest
+        tags: ghcr.io/${{ github.repository_owner }}/appli-transport:latest
