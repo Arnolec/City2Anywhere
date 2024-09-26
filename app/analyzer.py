@@ -22,7 +22,12 @@ class Analyzer(ABC):
 
     @abstractmethod
     def find_destinations_from_location(
-        self, lat: float, lon: float, start_date: datetime, end_date: datetime, max_distance: float
+        self,
+        lat: float,
+        lon: float,
+        start_date: datetime,
+        end_date: datetime,
+        max_distance: float,
     ) -> pd.DataFrame:
         pass
 

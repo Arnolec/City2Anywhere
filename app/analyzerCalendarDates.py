@@ -204,17 +204,17 @@ class AnalyzerCalendarDates(Analyzer):
             (trips_and_calendar_dates["date"] >= start_date)
             & (trips_and_calendar_dates["date"] <= end_date)
         ].assign(
-            dep_time=trips["date"] + trips["departure_time_x"],
-            arr_time=trips["date"] + trips["departure_time_y"],
+            dep_time=trips_and_calendar_dates["date"]
+            + trips_and_calendar_dates["departure_time_x"],
+            arr_time=trips_and_calendar_dates["date"]
+            + trips_and_calendar_dates["departure_time_y"],
         )
         trips = valid_trips
-        # trips.loc[:, ["dep_time"]] = trips["date"] + trips["departure_time_x"]
-        # trips.loc[:, ["arr_time"]] = trips["date"] + trips["departure_time_y"]
-        trips.loc[:, ["dep_time"]] = trips.apply(
-            lambda x: x["dep_time"].replace(tzinfo=pytz.timezone(self.timezone)), axis=1
+        trips["dep_time"] = pd.to_datetime(trips["dep_time"], utc=False).dt.tz_localize(
+            pytz.timezone(self.timezone)
         )
-        trips.loc[:, ["arr_time"]] = trips.apply(
-            lambda x: x["arr_time"].replace(tzinfo=pytz.timezone(self.timezone)), axis=1
+        trips["arr_time"] = pd.to_datetime(trips["arr_time"], utc=False).dt.tz_localize(
+            pytz.timezone(self.timezone)
         )
         trips = trips.assign(
             stop_timezone_x=self.timezone, stop_timezone_y=self.timezone

@@ -295,9 +295,9 @@ class AnalyzerCalendar(Analyzer):
             monday_index = df.columns.get_loc("monday")
             df = df[
                 df.apply(
-                    lambda x: True
-                    if x.iloc[monday_index + x.date.weekday()] == 1
-                    else False,
+                    lambda x: (
+                        True if x.iloc[monday_index + x.date.weekday()] == 1 else False
+                    ),
                     axis=1,
                 )
             ]
@@ -323,18 +323,12 @@ class AnalyzerCalendar(Analyzer):
             arr_time=dataframe_valid_dates["date"]
             + dataframe_valid_dates["departure_time_y"],
         )
-        dataframe_valid_dates.loc[:, "dep_time"] = dataframe_valid_dates.apply(
-            lambda x: x["dep_time"]
-            .replace(tzinfo=pytz.timezone(self.timezone))
-            .astimezone(tz=x["stop_timezone_x"]),
-            axis=1,
-        )
-        dataframe_valid_dates.loc[:, "arr_time"] = dataframe_valid_dates.apply(
-            lambda x: x["arr_time"]
-            .replace(tzinfo=pytz.timezone(self.timezone))
-            .astimezone(tz=x["stop_timezone_y"]),
-            axis=1,
-        )
+        dataframe_valid_dates["dep_time"] = pd.to_datetime(
+            dataframe_valid_dates["dep_time"]
+        ).dt.tz_localize(pytz.timezone(self.timezone))
+        dataframe_valid_dates["arr_time"] = pd.to_datetime(
+            dataframe_valid_dates["arr_time"]
+        ).dt.tz_localize(pytz.timezone(self.timezone))
         return dataframe_valid_dates
 
     def get_list_of_cities(self) -> pd.DataFrame:

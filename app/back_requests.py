@@ -154,7 +154,6 @@ def get_trips_to_city(
         max_distance,
     )
 
-    # Drop les duplicates (SNCF et DB ont des doublons en communs, comment comparer deux datetime avec des timezones différentes ?)
     trips_duplicated = raw_trips.drop_duplicates(subset=["dep_time"], keep="first")
     trips = trips_duplicated.sort_values(by="dep_time", ascending=True)
     return trips
