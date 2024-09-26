@@ -6,4 +6,4 @@ streamlit_folium
 streamlit_extras
 geopandas
 pytz
-sklearn
+scikit-learn
