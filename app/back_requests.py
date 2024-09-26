@@ -13,17 +13,15 @@ from app.data_updater import DataUpdater
 
 
 @st.cache_data
-def initialize_variables() -> (
-    tuple[
-        int,
-        fl.FeatureGroup,
-        Optional[str],
-        pd.DataFrame,
-        Optional[str],
-        pd.DataFrame,
-        pd.DataFrame,
-    ]
-):
+def initialize_variables() -> tuple[
+    int,
+    fl.FeatureGroup,
+    Optional[str],
+    pd.DataFrame,
+    Optional[str],
+    pd.DataFrame,
+    pd.DataFrame,
+]:
     zoom = 5
     fg = fl.FeatureGroup("Markers")
     previous_city: Optional[str] = None
@@ -56,17 +54,11 @@ def get_list_of_stops(_analyzers: dict[str, Analyzer]) -> pd.DataFrame:
     cities_concat = pd.concat(cities_analyzers)
     cities_concat_index = cities_concat.assign(ids=cities_concat.index)
     sum_appearance_on_index = (
-        cities_concat_index.groupby("ids")
-        .sum()
-        .sort_values(by="number_of_appearance", ascending=False)
+        cities_concat_index.groupby("ids").sum().sort_values(by="number_of_appearance", ascending=False)
     )
     cities_concat = cities_concat[~cities_concat.index.duplicated(keep="first")]
-    cities_concat["number_of_appearance"] = sum_appearance_on_index[
-        "number_of_appearance"
-    ]
-    cities_sorted = cities_concat.sort_values(
-        by="number_of_appearance", ascending=False
-    )
+    cities_concat["number_of_appearance"] = sum_appearance_on_index["number_of_appearance"]
+    cities_sorted = cities_concat.sort_values(by="number_of_appearance", ascending=False)
     cities = cities_sorted.set_index("stop_name")
     cities = cities[~cities.index.duplicated(keep="first")]
     return cities
@@ -75,16 +67,12 @@ def get_list_of_stops(_analyzers: dict[str, Analyzer]) -> pd.DataFrame:
 def get_cities(_analyzers: dict[str, Analyzer]) -> pd.DataFrame:
     list_of_stops = get_list_of_stops(_analyzers)
     list_of_stops = list_of_stops.assign(stop_name=list_of_stops.index)
-    df_with_clusters = utils.group_stops_by_city(
-        list_of_stops, eps_km=8.0
-    )  # Ajuste eps_km selon la densité des villes
+    df_with_clusters = utils.group_stops_by_city(list_of_stops, eps_km=8.0)  # Ajuste eps_km selon la densité des villes
     cluster_grouped = df_with_clusters.groupby("city_cluster")
     cities = pd.DataFrame()
     cities["stop_lat"] = cluster_grouped["stop_lat"].mean()
     cities["stop_lon"] = cluster_grouped["stop_lon"].mean()
-    cities_list_stops = cluster_grouped.apply(
-        lambda x: x["stop_name"].tolist(), include_groups=False
-    )
+    cities_list_stops = cluster_grouped.apply(lambda x: x["stop_name"].tolist(), include_groups=False)
     cities["max_distance"] = cluster_grouped.apply(
         lambda x: utils.euclidean_distance(
             x["stop_lat"],
@@ -254,8 +242,7 @@ def get_destinations(
 
     # Calculer les distances euclidiennes pour toutes les combinaisons de villes et destinations
     distances = np.sqrt(
-        (city_latitudes[:, np.newaxis] - stop_latitudes) ** 2
-        + (city_longitudes[:, np.newaxis] - stop_longitudes) ** 2
+        (city_latitudes[:, np.newaxis] - stop_latitudes) ** 2 + (city_longitudes[:, np.newaxis] - stop_longitudes) ** 2
     )
 
     # Trouver les indices des destinations qui respectent la condition de distance
@@ -269,22 +256,16 @@ def get_destinations(
 
     # Mettre à jour le DataFrame cities
     cities.loc[found_match, "present"] = True
-    cities.loc[found_match, "transport"] = np.array(stop_transport_types)[
-        first_match_idx[found_match]
-    ]
+    cities.loc[found_match, "transport"] = np.array(stop_transport_types)[first_match_idx[found_match]]
 
     cities_present = cities[cities["present"]]
     return cities_present
 
 
 @st.cache_data
-def generate_map_with_marker(
-    lat: float, lon: float, destinations: pd.DataFrame
-) -> fl.FeatureGroup:
+def generate_map_with_marker(lat: float, lon: float, destinations: pd.DataFrame) -> fl.FeatureGroup:
     fg = fl.FeatureGroup("Markers")
-    fg.add_child(
-        fl.Marker([lat, lon], popup="Ville de départ", icon=fl.Icon(color="white"))
-    )
+    fg.add_child(fl.Marker([lat, lon], popup="Ville de départ", icon=fl.Icon(color="white")))
     color = {
         "TER": "red",
         "TGV": "black",

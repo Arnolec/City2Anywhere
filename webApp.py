@@ -143,33 +143,20 @@ with col2:
                 col2_1, col2_2, col2_3 = st.columns([0.4, 0.2, 0.4], gap="small")
                 with col2_1:
                     st.write(trip.stop_name_x)
-                    departure_time = trip.dep_time.astimezone(
-                        pytz.timezone(trip.stop_timezone_x)
-                    )
+                    departure_time = trip.dep_time.astimezone(pytz.timezone(trip.stop_timezone_x))
                     st.write(
                         "Heure de départ : ",
                         datetime.datetime.strftime(departure_time, format="%Hh%M"),
                     )
                     if (
                         trip.dep_time.utcoffset() != trip.arr_time.utcoffset()
-                        or trip.dep_time.utcoffset()
-                        != datetime.datetime.now(
-                            pytz.timezone("Europe/Paris")
-                        ).utcoffset()
+                        or trip.dep_time.utcoffset() != datetime.datetime.now(pytz.timezone("Europe/Paris")).utcoffset()
                     ):
                         st.write("Fuseau horaire : ", trip.stop_timezone_x)
                 with col2_2:
-                    duration = (
-                        trip.departure_time_y - trip.departure_time_x
-                    ).total_seconds()
-                    string_duration = datetime.datetime.fromtimestamp(
-                        duration, tz=pytz.UTC
-                    ).strftime("%Hh%M")
-                    days = (
-                        f"{int(duration/86400)} jour "
-                        if int(duration / 86400) > 0
-                        else ""
-                    )
+                    duration = (trip.departure_time_y - trip.departure_time_x).total_seconds()
+                    string_duration = datetime.datetime.fromtimestamp(duration, tz=pytz.UTC).strftime("%Hh%M")
+                    days = f"{int(duration/86400)} jour " if int(duration / 86400) > 0 else ""
                     st.write(
                         "Durée : ",
                         days + string_duration + "",
@@ -177,19 +164,14 @@ with col2:
                     st.write("Transport : ", trip.transport_type)
                 with col2_3:
                     st.write(trip.stop_name_y)
-                    arrival_time = trip.arr_time.astimezone(
-                        pytz.timezone(trip.stop_timezone_y)
-                    )
+                    arrival_time = trip.arr_time.astimezone(pytz.timezone(trip.stop_timezone_y))
                     st.write(
                         "Heure d'arrivée : ",
                         datetime.datetime.strftime(arrival_time, format="%Hh%M"),
                     )
                     if (
                         trip.dep_time.utcoffset() != trip.arr_time.utcoffset()
-                        or trip.dep_time.utcoffset()
-                        != datetime.datetime.now(
-                            pytz.timezone("Europe/Paris")
-                        ).utcoffset()
+                        or trip.dep_time.utcoffset() != datetime.datetime.now(pytz.timezone("Europe/Paris")).utcoffset()
                     ):
                         st.write("Fuseau horaire : ", trip.stop_timezone_y)
         if len(trips) > st.session_state.max_trips_printed:

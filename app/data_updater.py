@@ -40,17 +40,11 @@ class DataUpdater:
         check_file = os.path.isfile(os.path.join("Data", transport, "calendar.txt"))
         dates: pd.DataFrame = pd.DataFrame()
         if check_file:
-            dates = pd.read_csv(os.path.join("Data", transport, "calendar.txt"))[
-                "end_date"
-            ]
+            dates = pd.read_csv(os.path.join("Data", transport, "calendar.txt"))["end_date"]
         else:
-            if not os.path.isfile(
-                os.path.join("Data", transport, "calendar_dates.txt")
-            ):
+            if not os.path.isfile(os.path.join("Data", transport, "calendar_dates.txt")):
                 return True
-            dates = pd.read_csv(os.path.join("Data", transport, "calendar_dates.txt"))[
-                "date"
-            ]
+            dates = pd.read_csv(os.path.join("Data", transport, "calendar_dates.txt"))["date"]
         valid_datas = dates[dates > int(datetime.now().strftime("%Y%m%d"))].count()
         percentage_valid_datas = valid_datas / len(dates)
         return percentage_valid_datas < 1 - PERCENTAGE_NON_VALID_DATAS

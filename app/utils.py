@@ -23,9 +23,7 @@ def load_class_analyzer(path: str) -> Analyzer:
 
 
 # Utilisation de DBSCAN avec distance Haversine pour regrouper les arrêts proches en "villes"
-def group_stops_by_city(
-    dataframe: pd.DataFrame, eps_km=1.0, min_samples=1
-) -> pd.DataFrame:
+def group_stops_by_city(dataframe: pd.DataFrame, eps_km=1.0, min_samples=1) -> pd.DataFrame:
     # Convertir les coordonnées en radians
     coords = np.radians(dataframe[["stop_lat", "stop_lon"]].values)
 
