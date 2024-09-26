@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: streamlit-deployment
+  labels:
+    app: streamlit
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: streamlit
+  template:
+    metadata:
+      labels:
+        app: streamlit
+    spec:
+      containers:
+        - name: streamlit
+          # Utilise ton image Streamlit ici, ou utilise une image locale si nécessaire.
+          image: ghcr.io/arnolec/appli-transport:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8501
+          livenessProbe:
+            httpGet:
+              path: /_stcore/health
+              port: 8501
+              scheme: HTTP
+            timeoutSeconds: 1
+          readinessProbe:
+            httpGet:
+              path: /_stcore/health
+              port: 8501
+              scheme: HTTP
+            timeoutSeconds: 1
+          resources:
+            limits:
+              cpu: 1
+              memory: 2Gi
+            requests:
+              cpu: 100m
+              memory: 745Mi
+      imagePullSecrets:
+      - name: ghcr-login-secret  # Référence au secret créé précédemment
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: streamlit-service
+spec:
+  type: NodePort
+  selector:
+    app: streamlit
+  ports:
+    - name: streamlit-port
+      protocol: TCP
+      port: 80
+      targetPort: 8501
+      nodePort: 30080  # Minikube utilisera ce port exposé sur localhost.
