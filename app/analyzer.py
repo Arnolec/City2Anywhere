@@ -1,7 +1,10 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
 
+
 import pandas as pd
+
+from app.models import Coords
 
 
 # Interface for the different analyzers
@@ -9,25 +12,20 @@ class Analyzer(ABC):
     @abstractmethod
     def find_trips_between_locations(
         self,
-        departure_lat: float,
-        departure_lon: float,
-        arrival_lat: float,
-        arrival_lon: float,
+        dep_coords: Coords,
+        arr_coords: Coords,
         start_date: datetime,
         end_date: datetime,
         departure_time: pd.Timedelta,
-        max_distance: float,
     ) -> pd.DataFrame:
         pass
 
     @abstractmethod
     def find_destinations_from_location(
         self,
-        lat: float,
-        lon: float,
+        city_coords: Coords,
         start_date: datetime,
         end_date: datetime,
-        max_distance: float,
     ) -> pd.DataFrame:
         pass
 

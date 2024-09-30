@@ -6,6 +6,7 @@ import pandas as pd
 import pytz
 
 from app.analyzer import Analyzer
+from app.models import Coords
 
 DISTANCE_MARGIN: float = 0.05
 
@@ -48,31 +49,25 @@ class AnalyzerCalendar(Analyzer):
         self.monday_integer_index = self.calendar.columns.get_loc("monday")
 
     # All stops near the location, Step 1 of find_destinations_from_location
-    def find_nearby_stops(self, lat: float, lon: float, max_distance: float) -> pd.DataFrame:
+    def find_nearby_stops(self, coords: Coords) -> pd.DataFrame:
         return self.stops[
-            np.sqrt((self.stops["stop_lat"] - lat) ** 2 + (self.stops["stop_lon"] - lon) ** 2) < 1.05 * max_distance
+            np.sqrt((self.stops["stop_lat"] - coords.lat) ** 2 + (self.stops["stop_lon"] - coords.lon) ** 2)
+            < 1.05 * coords.max_distance
         ]
 
     # All trips that fits location, Step 2 of find_destinations_from_location
-    def get_trips_nearby_location(self, lat: float, lon: float, max_distance: float) -> pd.Series:
-        self.nearby_stops: pd.DataFrame = self.find_nearby_stops(lat, lon, max_distance)
+    def get_trips_nearby_location(self, coords: Coords) -> pd.Series:
+        self.nearby_stops: pd.DataFrame = self.find_nearby_stops(coords)
         relevant_trips: pd.DataFrame = self.stop_times[self.stop_times["stop_id"].isin(self.nearby_stops["stop_id"])]
         self.unique_departures = relevant_trips.drop_duplicates(subset="trip_id")
         trip_ids: pd.Series = self.unique_departures["trip_id"]
         return trip_ids
 
     # All trips that fits calendar, Step 3 of find_destinations_from_location
-    def filter_trips_within_period(
-        self,
-        lat: float,
-        lon: float,
-        start_date: datetime,
-        end_date: datetime,
-        max_distance,
-    ) -> pd.Series:
+    def filter_trips_within_period(self, coords: Coords, start_date: datetime, end_date: datetime) -> pd.Series:
         start_date = pd.to_datetime(start_date)
         end_date = pd.to_datetime(end_date)
-        trip_ids: pd.Series = self.get_trips_nearby_location(lat, lon, max_distance)
+        trip_ids: pd.Series = self.get_trips_nearby_location(coords)
         relevant_trips: pd.DataFrame = self.trips[self.trips["trip_id"].isin(trip_ids)]
         relevant_services: pd.DataFrame = self.calendar[self.calendar["service_id"].isin(relevant_trips["service_id"])]
         services_within_period: pd.DataFrame = relevant_services[
@@ -112,15 +107,8 @@ class AnalyzerCalendar(Analyzer):
         return False
 
     # Find all destinations from a location and a period
-    def find_destinations_from_location(
-        self,
-        lat: float,
-        lon: float,
-        date_min: datetime,
-        date_max: datetime,
-        max_distance: float,
-    ) -> pd.DataFrame:
-        trip_ids_within_period: pd.Series = self.filter_trips_within_period(lat, lon, date_min, date_max, max_distance)
+    def find_destinations_from_location(self, coords: Coords, date_min: datetime, date_max: datetime) -> pd.DataFrame:
+        trip_ids_within_period: pd.Series = self.filter_trips_within_period(coords, date_min, date_max)
         stop_times_right_stops: pd.DataFrame = self.stop_times[self.stop_times["trip_id"].isin(trip_ids_within_period)]
         cities_after_inital_departure: pd.DataFrame = stop_times_right_stops.assign(
             city_departure_time="", city_stop_id=""
@@ -148,17 +136,14 @@ class AnalyzerCalendar(Analyzer):
 
     def find_trips_between_locations(
         self,
-        departure_lat: float,
-        departure_lon: float,
-        arrival_lat: float,
-        arrival_lon: float,
+        dep_coords: Coords,
+        arr_coords: Coords,
         start_date: datetime,
         end_date: datetime,
         departure_time: pd.Timedelta,
-        max_distance: float,
     ) -> pd.DataFrame:
-        departure_stops: pd.DataFrame = self.find_nearby_stops(departure_lat, departure_lon, max_distance)
-        arrival_stops: pd.DataFrame = self.find_nearby_stops(arrival_lat, arrival_lon, max_distance)
+        departure_stops: pd.DataFrame = self.find_nearby_stops(dep_coords)
+        arrival_stops: pd.DataFrame = self.find_nearby_stops(arr_coords)
         trips_containing_departure: pd.DataFrame = pd.merge(departure_stops, self.stop_times, on="stop_id")
         trips_containing_departure = trips_containing_departure[
             trips_containing_departure["departure_time"] > departure_time

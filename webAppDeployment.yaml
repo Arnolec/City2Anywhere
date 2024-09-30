@@ -16,7 +16,6 @@ spec:
     spec:
       containers:
         - name: streamlit
-          # Utilise ton image Streamlit ici, ou utilise une image locale si nécessaire.
           image: ghcr.io/arnolec/appli-transport:latest
           imagePullPolicy: Always
           ports:

@@ -4,6 +4,7 @@ import pandas as pd
 import pytest
 
 import app.analyzerCalendarDates as Ana
+from app.models import Coords
 
 
 @pytest.fixture
@@ -15,18 +16,21 @@ def analyzer() -> Ana:
 
 
 def test_nearby_stops(analyzer) -> None:
-    stops = analyzer.find_nearby_stops(42.0, 2.0, 0.5)
+    coords = Coords(lat=42.0, lon=2.0, max_distance=0.5)
+    stops = analyzer.find_nearby_stops(coords)
     assert stops.shape[0] == 1
     assert stops["stop_name"].values[0] == "Laval"
 
 
 def test_nearby_no_stop(analyzer) -> None:
-    stops = analyzer.find_nearby_stops(0, 0, 0.5)
+    coords = Coords(lat=0, lon=0, max_distance=0.5)
+    stops = analyzer.find_nearby_stops(coords)
     assert stops.shape[0] == 0
 
 
 def test_nearby_multiple_stops(analyzer) -> None:
-    stops = analyzer.find_nearby_stops(45.000, 5.000, 0.5)
+    coords = Coords(lat=45.0, lon=5.0, max_distance=0.5)
+    stops = analyzer.find_nearby_stops(coords)
     assert stops.shape[0] == 2
     assert "Paris001" in stops["stop_id"].values
     assert "Paris2001" in stops["stop_id"].values
@@ -36,12 +40,14 @@ def test_nearby_multiple_stops(analyzer) -> None:
 
 
 def test_trips_nearby_no_stops(analyzer) -> None:
-    trips = analyzer.get_trips_nearby_location(0, 0, 0.5)
+    coords = Coords(lat=0, lon=0, max_distance=0.5)
+    trips = analyzer.get_trips_nearby_location(coords)
     assert trips.shape[0] == 0
 
 
 def test_trips_nearby_one_stop(analyzer) -> None:
-    trips = analyzer.get_trips_nearby_location(50.0, 10.0, 0.5)
+    coords = Coords(lat=50.0, lon=10.0, max_distance=0.5)
+    trips = analyzer.get_trips_nearby_location(coords)
     assert trips.shape[0] == 1
     assert trips.values[0] == "TRIP001"
     assert analyzer.unique_departures.shape[0] == 1
@@ -49,7 +55,8 @@ def test_trips_nearby_one_stop(analyzer) -> None:
 
 
 def test_trips_nearby_one_stop_multiple_trips(analyzer) -> None:
-    trips = analyzer.get_trips_nearby_location(100.0, 15.0, 0.5)
+    coords = Coords(lat=100.0, lon=15.0, max_distance=0.5)
+    trips = analyzer.get_trips_nearby_location(coords)
     assert trips.shape[0] == 2
     assert "TRIP002" in trips.values
     assert "TRIP003" in trips.values
@@ -59,7 +66,8 @@ def test_trips_nearby_one_stop_multiple_trips(analyzer) -> None:
 
 
 def test_trips_nearby_multiple_stops_multiple_trips_not_same_trips(analyzer) -> None:
-    trips = analyzer.get_trips_nearby_location(45.000, 0.000, 0.5)
+    coords = Coords(lat=45.0, lon=0.0, max_distance=0.5)
+    trips = analyzer.get_trips_nearby_location(coords)
     assert "TRIP004" in trips.values
     assert "TRIP005" in trips.values
     assert "TRIP006" in trips.values
@@ -70,7 +78,8 @@ def test_trips_nearby_multiple_stops_multiple_trips_not_same_trips(analyzer) -> 
 
 
 def test_trips_nearby_multiple_stops_multiple_trips_same_trips(analyzer) -> None:
-    trips = analyzer.get_trips_nearby_location(45.000, 5.000, 0.5)
+    coords = Coords(lat=45.0, lon=5.0, max_distance=0.5)
+    trips = analyzer.get_trips_nearby_location(coords)
     assert "TRIP007" in trips.values
     assert "TRIP008" in trips.values
     assert "TRIP009" in trips.values
@@ -84,30 +93,35 @@ def test_trips_nearby_multiple_stops_multiple_trips_same_trips(analyzer) -> None
 
 
 def test_filter_trips_period_no_stop(analyzer) -> None:
-    trips = analyzer.filter_trips_within_period(0, 0, datetime(2024, 7, 1), datetime(2024, 7, 1), 0.5)
+    coords = Coords(lat=0.0, lon=0.0, max_distance=0.5)
+    trips = analyzer.filter_trips_within_period(coords, datetime(2024, 7, 1), datetime(2024, 7, 1))
     assert trips.shape[0] == 0
 
 
 def test_filter_trips_period_lower_than_real(analyzer) -> None:
-    trips = analyzer.filter_trips_within_period(50.0, 10.0, datetime(2024, 1, 1), datetime(2024, 1, 1), 0.5)
+    coords = Coords(lat=50.0, lon=10.0, max_distance=0.5)
+    trips = analyzer.filter_trips_within_period(coords, datetime(2024, 1, 1), datetime(2024, 1, 1))
     assert trips.shape[0] == 0
 
 
 def test_filter_trips_period_of_one_day(analyzer) -> None:
-    trips = analyzer.filter_trips_within_period(50.0, 10.0, datetime(2024, 7, 1), datetime(2024, 7, 1), 0.5)
+    coords = Coords(lat=50.0, lon=10.0, max_distance=0.5)
+    trips = analyzer.filter_trips_within_period(coords, datetime(2024, 7, 1), datetime(2024, 7, 1))
     assert trips.shape[0] == 1
     assert trips.values[0] == "TRIP001"
 
 
 def test_filter_trips_period_multiple_services(analyzer) -> None:
-    trips = analyzer.filter_trips_within_period(100.0, 15.0, datetime(2024, 7, 1), datetime(2024, 7, 6), 0.5)
+    coords = Coords(lat=100.0, lon=15.0, max_distance=0.5)
+    trips = analyzer.filter_trips_within_period(coords, datetime(2024, 7, 1), datetime(2024, 7, 6))
     assert trips.shape[0] == 2
     assert "TRIP002" in trips.values
     assert "TRIP003" in trips.values
 
 
 def test_filter_trips_period_multiple_trips_to_one_service(analyzer) -> None:
-    trips = analyzer.filter_trips_within_period(45.000, 0.000, datetime(2024, 7, 1), datetime(2024, 8, 1), 0.5)
+    coords = Coords(lat=45.0, lon=0.0, max_distance=0.5)
+    trips = analyzer.filter_trips_within_period(coords, datetime(2024, 7, 1), datetime(2024, 8, 1))
     assert trips.shape[0] == 3
     assert "TRIP004" in trips.values
     assert "TRIP005" in trips.values
@@ -118,34 +132,35 @@ def test_filter_trips_period_multiple_trips_to_one_service(analyzer) -> None:
 
 
 def test_find_destinations_no_stop(analyzer) -> None:
-    destinations = analyzer.find_destinations_from_location(0, 0, datetime(2024, 7, 1), datetime(2024, 8, 1), 0.5)
+    coords = Coords(lat=0.0, lon=0.0, max_distance=0.5)
+    destinations = analyzer.find_destinations_from_location(coords, datetime(2024, 7, 1), datetime(2024, 8, 1))
     assert destinations.shape[0] == 0
 
 
 def test_find_destinations_dates_outside_of_period(analyzer) -> None:
-    destinations = analyzer.find_destinations_from_location(45, 0.0, datetime(2023, 7, 1), datetime(2023, 8, 1), 0.5)
+    coords = Coords(lat=45.0, lon=0.0, max_distance=0.5)
+    destinations = analyzer.find_destinations_from_location(coords, datetime(2023, 7, 1), datetime(2023, 8, 1))
     assert destinations.shape[0] == 0
 
 
 def test_find_destinations_one_single_trip(analyzer) -> None:
-    destinations = analyzer.find_destinations_from_location(50.0, 10.0, datetime(2024, 7, 1), datetime(2024, 7, 1), 0.5)
+    coords = Coords(lat=50.0, lon=10.0, max_distance=0.5)
+    destinations = analyzer.find_destinations_from_location(coords, datetime(2024, 7, 1), datetime(2024, 7, 1))
     assert destinations.shape[0] == 1
     assert destinations["stop_name"].values[0] == "Perpignan"
 
 
 def test_find_destinations_one_single_trip_multiple_destinations(analyzer) -> None:
-    destinations = analyzer.find_destinations_from_location(
-        40.0, 0.0, datetime(2024, 8, 10), datetime(2024, 8, 20), 0.5
-    )
+    coords = Coords(lat=40.0, lon=0.0, max_distance=0.5)
+    destinations = analyzer.find_destinations_from_location(coords, datetime(2024, 8, 10), datetime(2024, 8, 20))
     assert destinations.shape[0] == 2
     assert "Laval" in destinations["stop_name"].values
     assert "Strasbourg" in destinations["stop_name"].values
 
 
 def test_find_destinations_same_city_in_one_trip(analyzer) -> None:
-    destinations = analyzer.find_destinations_from_location(
-        45.000, 5.000, datetime(2024, 7, 1), datetime(2024, 8, 1), 0.5
-    )
+    coords = Coords(lat=45.0, lon=5.0, max_distance=0.5)
+    destinations = analyzer.find_destinations_from_location(coords, datetime(2024, 7, 1), datetime(2024, 8, 1))
     assert destinations.shape[0] == 3
     assert "Laval001" in destinations["stop_id"].values
     assert "Vannes001" in destinations["stop_id"].values
@@ -157,58 +172,38 @@ def test_find_destinations_same_city_in_one_trip(analyzer) -> None:
 
 
 def test_find_trips_stops_not_found(analyzer) -> None:
+    dep_coords = Coords(lat=0.0, lon=0.0, max_distance=0.5)
+    arr_coords = Coords(lat=0.0, lon=0.0, max_distance=0.5)
     trips = analyzer.find_trips_between_locations(
-        0,
-        0,
-        0,
-        0,
-        datetime(2024, 7, 1),
-        datetime(2024, 9, 1),
-        pd.Timedelta("08:00:00"),
-        0.5,
+        dep_coords, arr_coords, datetime(2024, 7, 1), datetime(2024, 9, 1), pd.Timedelta("08:00:00")
     )
     assert trips.shape[0] == 0
 
 
 def test_find_trips_hours_too_late(analyzer) -> None:
+    dep_coords = Coords(lat=50.0, lon=10.0, max_distance=0.5)
+    arr_coords = Coords(lat=48.0, lon=5.0, max_distance=0.5)
     trips = analyzer.find_trips_between_locations(
-        50.0,
-        10.0,
-        48.0,
-        5.0,
-        datetime(2024, 7, 1),
-        datetime(2024, 7, 1),
-        pd.Timedelta("20:00:00"),
-        0.5,
+        dep_coords, arr_coords, datetime(2024, 7, 1), datetime(2024, 7, 1), pd.Timedelta("20:00:00")
     )
     assert trips.shape[0] == 0
 
 
 def test_find_trips_one(analyzer) -> None:
+    dep_coords = Coords(lat=50.0, lon=10.0, max_distance=0.5)
+    arr_coords = Coords(lat=48.0, lon=5.0, max_distance=0.5)
     trips = analyzer.find_trips_between_locations(
-        50.0,
-        10.0,
-        48.0,
-        5.0,
-        datetime(2024, 7, 1),
-        datetime(2024, 7, 1),
-        pd.Timedelta("08:00:00"),
-        0.5,
+        dep_coords, arr_coords, datetime(2024, 7, 1), datetime(2024, 7, 1), pd.Timedelta("08:00:00")
     )
     assert trips.shape[0] == 1
     assert "TRIP001" in trips["trip_id"].values
 
 
 def test_find_trips_multiple(analyzer) -> None:
+    dep_coords = Coords(lat=100.0, lon=15.0, max_distance=0.5)
+    arr_coords = Coords(lat=48.0, lon=5.0, max_distance=0.5)
     trips = analyzer.find_trips_between_locations(
-        100.0,
-        15.0,
-        48.0,
-        5.0,
-        datetime(2024, 7, 1),
-        datetime(2024, 8, 1),
-        pd.Timedelta("08:00:00"),
-        0.5,
+        dep_coords, arr_coords, datetime(2024, 7, 1), datetime(2024, 8, 1), pd.Timedelta("08:00:00")
     )
     assert trips.shape[0] == 5
     assert "TRIP002" in trips["trip_id"].values
