@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 
 import app.backend.analyzerCalendar as Ana
-from app.backend.models import Coords
+from app.backend.models import CoordsDistance as Coords
 
 
 @pytest.fixture
