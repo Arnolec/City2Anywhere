@@ -3,8 +3,8 @@ from datetime import datetime
 import pandas as pd
 import pytest
 
-import app.analyzerCalendarDates as Ana
-from app.models import Coords
+import app.backend.analyzerCalendarDates as Ana
+from app.backend.models import Coords
 
 
 @pytest.fixture

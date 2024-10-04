@@ -4,8 +4,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-import app.analyzerCalendar as Ana
-from app.models import Coords
+import app.backend.analyzerCalendar as Ana
+from app.backend.models import Coords
 
 
 @pytest.fixture

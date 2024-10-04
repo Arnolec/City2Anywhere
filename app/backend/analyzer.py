@@ -1,10 +1,9 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
 
-
 import pandas as pd
 
-from app.models import Coords
+from app.backend.models import Coords
 
 
 # Interface for the different analyzers

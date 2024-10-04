@@ -5,10 +5,10 @@ import numpy as np
 import pandas as pd
 from sklearn.cluster import DBSCAN
 
-from app.analyzer import Analyzer
-from app.analyzerCalendar import AnalyzerCalendar
-from app.analyzerCalendarDates import AnalyzerCalendarDates
-from app.analyzerSNCF import AnalyzerCalendarDatesSNCF
+from app.backend.analyzer import Analyzer
+from app.backend.analyzerCalendar import AnalyzerCalendar
+from app.backend.analyzerCalendarDates import AnalyzerCalendarDates
+from app.backend.analyzerSNCF import AnalyzerCalendarDatesSNCF
 
 
 def load_class_analyzer(path: str) -> Analyzer:

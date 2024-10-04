@@ -5,8 +5,8 @@ import numpy as np
 import pandas as pd
 import pytz
 
-from app.analyzer import Analyzer
-from app.models import Coords
+from app.backend.analyzer import Analyzer
+from app.backend.models import CoordsDistance as Coords
 
 DISTANCE_MARGIN: float = 0.05
 

@@ -8,8 +8,8 @@ import pandas as pd
 import streamlit as st
 
 import app.utils as utils
-from app.analyzer import Analyzer
-from app.data_updater import DataUpdater
+from app.backend.analyzer import Analyzer
+from app.backend.data_updater import DataUpdater
 
 
 @st.cache_data

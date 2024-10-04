@@ -1,18 +1,18 @@
-from datetime import datetime, time
 import os
 from collections import Counter
+from datetime import datetime, time
 
+import geopandas as gpd
 import numpy as np
 import pandas as pd
 from sklearn.cluster import DBSCAN
-import geopandas as gpd
 
-from app.analyzer import Analyzer
-from app.analyzerCalendar import AnalyzerCalendar
-from app.analyzerCalendarDates import AnalyzerCalendarDates
-from app.analyzerSNCF import AnalyzerCalendarDatesSNCF
-from app.data_updater import DataUpdater
-from app.models import Coords
+from app.backend.analyzer import Analyzer
+from app.backend.analyzerCalendar import AnalyzerCalendar
+from app.backend.analyzerCalendarDates import AnalyzerCalendarDates
+from app.backend.analyzerSNCF import AnalyzerCalendarDatesSNCF
+from app.backend.data_updater import DataUpdater
+from app.backend.models import Coords, CoordsDistance
 
 
 def load_class_analyzer(path: str) -> Analyzer:
@@ -151,12 +151,26 @@ def get_cities(analyzers) -> pd.DataFrame:
     )
     cities["stop_name"] = cities_list_stops.apply(choosing_city_name)
     cities = cities.set_index("stop_name")
-    list_cities = cities.to_dict()
-    return list_cities
+    return cities
 
 
 def update_data() -> None:
     DataUpdater().update_data()
+
+
+def get_city_max_distance(coords: Coords, cities: pd.DataFrame) -> CoordsDistance:
+    cities = cities[np.sqrt((cities["stop_lat"] - coords.lat) ** 2 + (cities["stop_lon"] - coords.lon) ** 2) < 0.1]
+    if cities.empty:
+        return None
+    cities = cities.assign(
+        distance=np.sqrt((cities["stop_lat"] - coords.lat) ** 2 + (cities["stop_lon"] - coords.lon) ** 2)
+    )
+    closest_city = cities["distance"].idxmin()
+    return CoordsDistance(
+        lat=cities.loc[closest_city, "stop_lat"],
+        lon=cities.loc[closest_city, "stop_lon"],
+        max_distance=cities.loc[closest_city, "max_distance"],
+    )
 
 
 # A Modifier car maintenant cities n'est plus un dataframe mais un dict

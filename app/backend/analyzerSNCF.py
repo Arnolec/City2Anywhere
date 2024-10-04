@@ -5,13 +5,13 @@ import numpy as np
 import pandas as pd
 import pytz
 
-from app.analyzer import Analyzer
-from app.models import Coords
+from app.backend.analyzer import Analyzer
+from app.backend.models import CoordsDistance as Coords
 
 DISTANCE_MARGIN: float = 0.05
 
 
-class AnalyzerCalendarDates(Analyzer):
+class AnalyzerCalendarDatesSNCF(Analyzer):
     unique_departures: pd.DataFrame = pd.DataFrame()
     city_list: pd.DataFrame = pd.DataFrame()
     stops: pd.DataFrame = pd.DataFrame()
@@ -19,6 +19,8 @@ class AnalyzerCalendarDates(Analyzer):
     routes: pd.DataFrame = pd.DataFrame()
     stop_times: pd.DataFrame = pd.DataFrame()
     trips: pd.DataFrame = pd.DataFrame()
+    stops_id: pd.DataFrame = pd.DataFrame()
+    stops_area: pd.DataFrame = pd.DataFrame()
     nearby_stops: pd.DataFrame = pd.DataFrame()
     timezone: str = "UTC"
 
@@ -29,26 +31,21 @@ class AnalyzerCalendarDates(Analyzer):
         ]
         agency = pd.read_csv(os.path.join("Data", transport_type, "agency.txt"))
         self.timezone = agency["agency_timezone"].iloc[0]
-        stops = pd.read_csv(os.path.join("Data", transport_type, "stops.txt"))
-        if "stop_timezone" not in stops.columns:
-            stops = stops.assign(stop_timezone=self.timezone)
-            self.stops = stops[["stop_id", "stop_name", "stop_lat", "stop_lon", "stop_timezone"]]
-        else:
-            if stops["stop_timezone"].iloc[0] == "":
-                stops["stop_timezone"] = self.timezone
-                self.stops = stops[["stop_id", "stop_name", "stop_lat", "stop_lon", "stop_timezone"]]
-            else:
-                self.stops = stops[["stop_id", "stop_name", "stop_lat", "stop_lon", "stop_timezone"]]
+        self.stops = pd.read_csv(os.path.join("Data", transport_type, "stops.txt"))[
+            ["stop_id", "stop_name", "stop_lat", "stop_lon", "parent_station"]
+        ]
         self.trips = pd.read_csv(os.path.join("Data", transport_type, "trips.txt"))[
             ["service_id", "trip_id", "route_id"]
         ]
         self.calendar_dates.date = pd.to_datetime(self.calendar_dates["date"], format="%Y%m%d")
         self.stop_times["departure_time"] = pd.to_timedelta(self.stop_times["departure_time"])
+        self.stops_id = self.stops[~self.stops["parent_station"].isna()]
+        self.stops_area = self.stops[self.stops["parent_station"].isna()]
 
     # Retourne les StopPoints proche du point de départ
     def find_nearby_stops(self, coords: Coords):  # Stop ID pour Global, parent_station pour SNCF
-        return self.stops[
-            np.sqrt((self.stops["stop_lat"] - coords.lat) ** 2 + (self.stops["stop_lon"] - coords.lon) ** 2)
+        return self.stops_id[
+            np.sqrt((self.stops_id["stop_lat"] - coords.lat) ** 2 + (self.stops_id["stop_lon"] - coords.lon) ** 2)
             < 1.05 * coords.max_distance
         ]
 
@@ -98,12 +95,15 @@ class AnalyzerCalendarDates(Analyzer):
         duplicate_destinations_stop_points: pd.DataFrame = cities_after_inital_departure[
             cities_after_inital_departure["departure_time"] > cities_after_inital_departure["city_departure_time"]
         ]
-        duplicate_destinations_stop_points = self.stops[
-            self.stops["stop_id"].isin(duplicate_destinations_stop_points["stop_id"])
+        duplicate_destinations_stop_points = self.stops_id[
+            self.stops_id["stop_id"].isin(duplicate_destinations_stop_points["stop_id"])
         ]
-        destinations_stop_area = duplicate_destinations_stop_points.drop_duplicates(subset="stop_id")
+        duplicate_destinations_stop_area: pd.DataFrame = self.stops_area[
+            self.stops_area["stop_id"].isin(duplicate_destinations_stop_points["parent_station"])
+        ]
+        destinations_stop_area = duplicate_destinations_stop_area.drop_duplicates(subset="stop_id")
         destinations: pd.DataFrame = destinations_stop_area[
-            ~destinations_stop_area["stop_id"].isin(self.nearby_stops["stop_id"])
+            ~destinations_stop_area["stop_id"].isin(self.nearby_stops["parent_station"])
         ]
         return destinations
 
@@ -136,11 +136,11 @@ class AnalyzerCalendarDates(Analyzer):
         trips_and_calendar_dates: pd.DataFrame = pd.merge(trips, self.calendar_dates, on="service_id")
         valid_trips: pd.DataFrame = trips_and_calendar_dates[
             (trips_and_calendar_dates["date"] >= start_date) & (trips_and_calendar_dates["date"] <= end_date)
-        ].assign(
-            dep_time=trips_and_calendar_dates["date"] + trips_and_calendar_dates["departure_time_x"],
-            arr_time=trips_and_calendar_dates["date"] + trips_and_calendar_dates["departure_time_y"],
+        ]
+        trips = valid_trips.assign(
+            dep_time=valid_trips["date"] + valid_trips["departure_time_x"],
+            arr_time=valid_trips["date"] + valid_trips["departure_time_y"],
         )
-        trips = valid_trips
         trips["dep_time"] = pd.to_datetime(trips["dep_time"], utc=False).dt.tz_localize(pytz.timezone(self.timezone))
         trips["arr_time"] = pd.to_datetime(trips["arr_time"], utc=False).dt.tz_localize(pytz.timezone(self.timezone))
         trips = trips.assign(stop_timezone_x=self.timezone, stop_timezone_y=self.timezone)
@@ -148,6 +148,9 @@ class AnalyzerCalendarDates(Analyzer):
 
     def get_list_of_cities(self) -> pd.DataFrame:
         appearance_count = self.stop_times.groupby("stop_id").count()["trip_id"]
-        stop_cities = self.stops.set_index("stop_id")
-        stop_cities = stop_cities.assign(number_of_appearance=appearance_count)
-        return stop_cities
+        appearance_stop_id = pd.merge(appearance_count, self.stops, on="stop_id")
+        appeareance_stop_area = appearance_stop_id.groupby("parent_station").sum()["trip_id"]
+        df_stop_area = self.stops_area[["stop_id", "stop_name", "stop_lat", "stop_lon"]].copy()
+        df_stop_area.set_index("stop_id", inplace=True)
+        df_stop_area = df_stop_area.assign(number_of_appearance=appeareance_stop_area)
+        return df_stop_area

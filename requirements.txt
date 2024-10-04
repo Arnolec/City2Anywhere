@@ -1,9 +1,8 @@
 numpy
 pandas
-folium
-streamlit
-streamlit_folium
-streamlit_extras
 geopandas
 pytz
 scikit-learn
+pydantic
+requests
+fastapi[standard]
