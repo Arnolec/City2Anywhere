@@ -8,7 +8,9 @@ import streamlit as st
 import os
 
 # Useful file to build front and ask request only once if needed and parameters do not change
-backend_url = os.getenv("BACKEND_URL", "http://localhost:8000")  # Valeur par défaut : localhost pour l'environnement local
+backend_url = os.getenv(
+    "BACKEND_URL", "http://localhost:8000"
+)  # Valeur par défaut : localhost pour l'environnement local
 
 
 @st.cache_data
