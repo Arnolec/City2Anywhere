@@ -20,6 +20,12 @@ spec:
           imagePullPolicy: Always
           ports:
             - containerPort: 8000
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8000
+              scheme: HTTP
+            timeoutSeconds: 1
           resources:
             limits:
               cpu: 1

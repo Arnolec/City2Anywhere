@@ -16,10 +16,13 @@ spec:
     spec:
       containers:
         - name: streamlit
-          image: ghcr.io/arnolec/appli-transport:latest
+          image: ghcr.io/arnolec/front-transport:latest
           imagePullPolicy: Always
           ports:
-            - containerPort: 8501
+          - containerPort: 8501
+          env:
+          - name: BACKEND_URL
+            value: "http://fastapi-service:8000" # URL du service backend
           livenessProbe:
             httpGet:
               path: /_stcore/health

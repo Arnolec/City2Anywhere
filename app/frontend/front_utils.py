@@ -5,8 +5,10 @@ import folium as fl
 import pandas as pd
 import requests
 import streamlit as st
+import os
 
 # Useful file to build front and ask request only once if needed and parameters do not change
+backend_url = os.getenv("BACKEND_URL", "http://localhost:8000")  # Valeur par défaut : localhost pour l'environnement local
 
 
 @st.cache_data
@@ -66,7 +68,7 @@ def generate_map_with_marker(lat: float, lon: float, destinations: pd.DataFrame)
 @st.cache_data
 def get_cities() -> pd.DataFrame:
     try:
-        cities = requests.get("http://localhost:8000/v1/list_cities/").json()
+        cities = requests.get(f"{backend_url}/v1/list_cities/").json()
     except requests.ConnectionError:
         return pd.DataFrame()
     return pd.DataFrame(cities)
@@ -78,7 +80,7 @@ def get_destinations(lat: float, lon: float, transport_type: list[str], periode:
     end = periode[1].strftime("%Y-%m-%dT%H:%M:%S")
     params = {"coords": {"lat": lat, "lon": lon}, "periode": {"start": start, "end": end}, "transport": transport_type}
     try:
-        destinations = requests.patch("http://localhost:8000/v1/destinations/", json=params).json()
+        destinations = requests.patch(f"{backend_url}/v1/destinations/", json=params).json()
     except requests.ConnectionError:
         return pd.DataFrame()
     return pd.DataFrame(destinations)
@@ -104,7 +106,7 @@ def get_trips(
         "dep_time": departure_time.strftime("%H:%M:%S"),
     }
     try:
-        trips = requests.patch("http://localhost:8000/v1/trips/", json=params).json()
+        trips = requests.patch(f"{backend_url}http://localhost:8000/v1/trips/", json=params).json()
     except requests.ConnectionError:
         return pd.DataFrame()
     df = pd.DataFrame(trips)
@@ -117,7 +119,7 @@ def get_trips(
 @st.cache_data
 def get_center() -> Optional[tuple[float, float]]:
     try:
-        center = requests.get("http://localhost:8000/v1/center/").json()
+        center = requests.get(f"{backend_url}/v1/center/").json()
     except requests.ConnectionError:
         return [0, 0]
     if center is None:
@@ -128,7 +130,7 @@ def get_center() -> Optional[tuple[float, float]]:
 @st.cache_data
 def get_transport() -> Optional[list[str]]:
     try:
-        transport = requests.get("http://localhost:8000/v1/transports/").json()
+        transport = requests.get(f"{backend_url}/v1/transports/").json()
     except requests.ConnectionError:
         return []
     transport = transport["transport_types"]
