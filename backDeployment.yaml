@@ -46,8 +46,7 @@ spec:
   selector:
     app: fastapi
   ports:
-    - name: streamlit-port
+    - name: fastapi-port
       protocol: TCP
       port: 80
       targetPort: 8000
-      nodePort: 30081  # Minikube utilisera ce port exposé sur localhost.

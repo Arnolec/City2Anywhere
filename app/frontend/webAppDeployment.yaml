@@ -59,4 +59,3 @@ spec:
       protocol: TCP
       port: 80
       targetPort: 8501
-      nodePort: 30080  # Minikube utilisera ce port exposé sur localhost.
