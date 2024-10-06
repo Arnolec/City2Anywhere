@@ -108,7 +108,7 @@ def get_trips(
         "dep_time": departure_time.strftime("%H:%M:%S"),
     }
     try:
-        trips = requests.patch(f"{backend_url}http://localhost:8000/v1/trips/", json=params).json()
+        trips = requests.patch(f"{backend_url}/v1/trips/", json=params).json()
     except requests.ConnectionError:
         return pd.DataFrame()
     df = pd.DataFrame(trips)
