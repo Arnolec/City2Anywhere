@@ -22,7 +22,7 @@ spec:
           - containerPort: 8501
           env:
           - name: BACKEND_URL
-            value: "http://fastapi-service:8000" # URL du service backend
+            value: "http://fastapi-service:80" # URL du service backend
           livenessProbe:
             httpGet:
               path: /_stcore/health
